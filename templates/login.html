@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Connexion{% endblock %}
+
+{% block content %}
+<section class="bloc centre-page">
+  <div class="carte carte-form">
+    <h1>Se connecter</h1>
+
+    {% if erreur %}<div class="alerte alerte-error">{{ erreur }}</div>{% endif %}
+
+    <form method="post" action="/login">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>Courriel
+        <input type="email" name="email" value="{{ email or '' }}" required autofocus>
+      </label>
+      <label>Mot de passe
+        <input type="password" name="mot_de_passe" required>
+      </label>
+      <button class="btn btn-bloc" type="submit">Se connecter</button>
+    </form>
+
+    <p class="lien-bas">
+      Pas encore de compte ? <a href="/inscription">S'inscrire</a>
+    </p>
+  </div>
+</section>
+{% endblock %}

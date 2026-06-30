@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Paramètres{% endblock %}
+
+{% block content %}
+<section class="app-wrap etroit">
+  <h1>Vos clés API</h1>
+  <p class="muted">
+    Ces clés permettent à l'outil de rechercher les contacts pour vous.
+    Elles sont chiffrées et jamais partagées.
+  </p>
+
+  {% if bienvenue %}
+    <div class="alerte alerte-info">
+      👋 Bienvenue ! Ajoute tes clés API ci-dessous pour commencer à chercher.
+    </div>
+  {% endif %}
+  {% if sauvegarde %}<div class="alerte alerte-ok">✅ Clés enregistrées.</div>{% endif %}
+  {% if erreur %}<div class="alerte alerte-error">⛔ {{ erreur }}</div>{% endif %}
+
+  <form method="post" action="/parametres" class="form-cles" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    {% set champs = [
+      ("hunter", "Hunter.io API Key", hunter, "https://hunter.io/api-keys"),
+      ("apollo", "Apollo.io API Key", apollo, "https://app.apollo.io/#/settings/integrations/api"),
+      ("serpapi", "SerpAPI Key", serpapi, "https://serpapi.com/manage-api-key")
+    ] %}
+
+    {% for nom, libelle, valeur, lien in champs %}
+      <div class="champ-cle">
+        <div class="champ-tete">
+          <label for="{{ nom }}">
+            {{ libelle }}
+            {% if valeur %}
+              <span class="badge ok">✅ configurée</span>
+            {% else %}
+              <span class="badge ko">❌ manquante</span>
+            {% endif %}
+          </label>
+          <a href="{{ lien }}" target="_blank" rel="noopener">Obtenir ma clé →</a>
+        </div>
+        <div class="champ-saisie">
+          <input type="password" id="{{ nom }}" name="{{ nom }}"
+                 value="{{ valeur }}" autocomplete="off">
+          <button type="button" class="toggle" data-cible="{{ nom }}">Afficher</button>
+        </div>
+      </div>
+    {% endfor %}
+
+    <button class="btn" type="submit">Sauvegarder</button>
+  </form>
+</section>
+{% endblock %}

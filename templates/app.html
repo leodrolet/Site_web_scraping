@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Outil de prospection{% endblock %}
+
+{% block content %}
+<section class="app-wrap">
+  <h1>Outil de prospection</h1>
+
+  {% if not cles_configurees %}
+    <div class="alerte alerte-warn">
+      ⚠️ Aucune clé API configurée. Va dans
+      <a href="/parametres">Paramètres</a> pour ajouter au moins ta clé Hunter.io.
+    </div>
+  {% endif %}
+
+  {% if erreur %}<div class="alerte alerte-error">⛔ {{ erreur }}</div>{% endif %}
+
+  <div class="tabs">
+    <button class="tab actif" type="button" data-cible="onglet-simple">🔎 Recherche simple</button>
+    <button class="tab" type="button" data-cible="onglet-lot">📋 Recherche en lot</button>
+  </div>
+
+  <!-- Onglet 1 : recherche simple -->
+  <div id="onglet-simple" class="panneau">
+    <form method="post" action="/app/recherche" data-loading>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="grille-3">
+        <label>Nom de l'entreprise
+          <input type="text" name="entreprise" placeholder="Ex : Bell Canada"
+                 value="{{ entreprise or '' }}" required>
+        </label>
+        <label>Département cible
+          <select name="departement">
+            {% for d in departements %}
+              <option value="{{ d }}" {% if departement == d %}selected{% endif %}>{{ d }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Région
+          <select name="region">
+            {% for r in regions %}
+              <option value="{{ r }}" {% if region == r %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <button class="btn" type="submit">Rechercher</button>
+      <div class="progress" hidden><div class="barre"></div></div>
+    </form>
+  </div>
+
+  <!-- Onglet 2 : recherche en lot -->
+  <div id="onglet-lot" class="panneau" hidden>
+    <form method="post" action="/app/lot" enctype="multipart/form-data" data-loading>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <p>Téléverse un fichier CSV avec les colonnes
+        <code>entreprise, departement, region</code>.</p>
+      <input type="file" name="fichier" accept=".csv" required>
+      <button class="btn" type="submit">Traiter toute la liste</button>
+      <div class="progress" hidden><div class="barre"></div></div>
+    </form>
+  </div>
+
+  {% if avertissements %}
+    <div class="avertissements">
+      {% for a in avertissements %}
+        <div class="alerte alerte-info">ℹ️ {{ a }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if resultats is defined and resultats %}
+    <div class="resultats">
+      <div class="resultats-tete">
+        <h2>{{ resultats|length }} résultat(s)</h2>
+        <form method="post" action="/app/telecharger">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="charge" value="{{ charge }}">
+          <button class="btn" type="submit">📥 Télécharger Excel</button>
+        </form>
+      </div>
+      <div class="tableau-scroll">
+        <table>
+          <thead>
+            <tr>{% for c in colonnes %}<th>{{ c }}</th>{% endfor %}</tr>
+          </thead>
+          <tbody>
+            {% for ligne in resultats %}
+              <tr>{% for c in colonnes %}<td>{{ ligne.get(c, '') }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% elif resultats is defined %}
+    <div class="alerte alerte-info">Aucun résultat pour cette recherche.</div>
+  {% endif %}
+</section>
+{% endblock %}

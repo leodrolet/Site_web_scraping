@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Trouvez les bons contacts B2B{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-inner">
+    <h1>Trouvez les bons contacts B2B en quelques secondes</h1>
+    <p class="hero-sous">
+      Entrez un nom d'entreprise. Obtenez le bon contact marketing ou ventes
+      avec son courriel — prêt à utiliser.
+    </p>
+    <a class="btn btn-lg" href="/login">Essayer maintenant →</a>
+  </div>
+</section>
+
+<section class="bloc">
+  <h2 class="titre-section">Comment ça marche</h2>
+  <div class="grille-3">
+    <div class="carte centre">
+      <div class="emoji">🏢</div>
+      <h3>1. Entrez le nom d'une entreprise</h3>
+    </div>
+    <div class="carte centre">
+      <div class="emoji">🎯</div>
+      <h3>2. Choisissez Marketing ou Ventes</h3>
+    </div>
+    <div class="carte centre">
+      <div class="emoji">📥</div>
+      <h3>3. Téléchargez votre fichier Excel</h3>
+    </div>
+  </div>
+</section>
+
+<section class="bloc bloc-alt">
+  <h2 class="titre-section">Fonctionnalités</h2>
+  <ul class="liste-fonctions">
+    <li>✅ Recherche par entreprise ou en lot (CSV)</li>
+    <li>✅ Courriel professionnel du contact</li>
+    <li>✅ Localisation (ville, province, pays)</li>
+    <li>✅ Export Excel formaté</li>
+    <li>✅ Sources : Hunter.io, Apollo.io, Google</li>
+  </ul>
+</section>
+
+<section class="bloc">
+  <h2 class="titre-section">Tarifs</h2>
+  <div class="grille-2 tarifs">
+    <div class="carte plan">
+      <h3>Starter</h3>
+      <p class="plan-prix">Gratuit pour commencer</p>
+      <ul>
+        <li>Utilisez vos propres clés API gratuites</li>
+        <li>Recherche simple et en lot</li>
+        <li>Export Excel inclus</li>
+      </ul>
+      <a class="btn" href="/inscription">Créer un compte gratuit</a>
+    </div>
+    <div class="carte plan plan-grise">
+      <span class="ruban">Bientôt</span>
+      <h3>Pro</h3>
+      <p class="plan-prix">Bientôt disponible</p>
+      <ul>
+        <li>Clés API incluses</li>
+        <li>Support prioritaire</li>
+      </ul>
+      <button class="btn" disabled>Bientôt disponible</button>
+    </div>
+  </div>
+</section>
+{% endblock %}

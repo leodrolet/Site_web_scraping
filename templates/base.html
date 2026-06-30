@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Prospection B2B{% endblock %} · ProspectB2B</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="logo" href="/">🔍 Prospect<span>B2B</span></a>
+      <nav class="nav-liens">
+        {% if utilisateur %}
+          <a href="/app">Outil</a>
+          <a href="/parametres">Paramètres</a>
+          <a class="btn-ghost" href="/logout">Déconnexion</a>
+        {% else %}
+          <a href="/login">Se connecter</a>
+          <a class="btn" href="/inscription">Créer un compte</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      © 2025 ProspectB2B ·
+      <a href="mailto:contact@prospectb2b.app">Contact</a> ·
+      <a href="/confidentialite">Politique de confidentialité</a>
+    </div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

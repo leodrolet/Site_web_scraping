@@ -1,0 +1,15 @@
+# --- Logique de recherche / export (existant, inchangé) ---
+requests>=2.31
+openpyxl>=3.1
+
+# --- Site web (FastAPI + Jinja2) ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+jinja2>=3.1
+python-multipart>=0.0.9
+sqlalchemy>=2.0
+bcrypt>=4.1
+itsdangerous>=2.1
+cryptography>=42.0
+aiofiles>=23.2
+python-dotenv>=1.0

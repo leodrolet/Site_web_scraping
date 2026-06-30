@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Créer un compte{% endblock %}
+
+{% block content %}
+<section class="bloc centre-page">
+  <div class="carte carte-form">
+    <h1>Créer mon compte</h1>
+
+    {% if erreur %}<div class="alerte alerte-error">{{ erreur }}</div>{% endif %}
+
+    <form method="post" action="/inscription">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>Nom <span class="muted">(optionnel)</span>
+        <input type="text" name="nom" value="{{ nom or '' }}">
+      </label>
+      <label>Courriel
+        <input type="email" name="email" value="{{ email or '' }}" required>
+      </label>
+      <label>Mot de passe <span class="muted">(8 caractères minimum)</span>
+        <input type="password" name="mot_de_passe" minlength="8" required>
+      </label>
+      <label>Confirmer le mot de passe
+        <input type="password" name="confirmation" minlength="8" required>
+      </label>
+      <button class="btn btn-bloc" type="submit">Créer mon compte</button>
+    </form>
+
+    <p class="lien-bas">
+      Déjà un compte ? <a href="/login">Se connecter</a>
+    </p>
+  </div>
+</section>
+{% endblock %}
