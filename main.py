@@ -5,6 +5,8 @@ les fichiers statiques et la base de données.
 Lancer avec :  uvicorn main:app --reload
 """
 
+import os
+
 from dotenv import load_dotenv
 
 load_dotenv()  # IMPORTANT : charge SECRET_KEY avant l'import de `auth`.
@@ -12,6 +14,8 @@ load_dotenv()  # IMPORTANT : charge SECRET_KEY avant l'import de `auth`.
 from fastapi import FastAPI  # noqa: E402
 from fastapi.responses import RedirectResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from auth import RedirectionConnexion  # noqa: E402
 from database import init_db  # noqa: E402
@@ -22,7 +26,8 @@ app = FastAPI(title="Outil de prospection B2B")
 # Crée les tables SQLite au démarrage (idempotent).
 init_db()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=os.path.join(_BASE_DIR, "static")),
+          name="static")
 
 
 @app.exception_handler(RedirectionConnexion)

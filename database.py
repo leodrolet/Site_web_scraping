@@ -1,14 +1,40 @@
-"""database.py — Modèles SQLAlchemy et initialisation de la base SQLite."""
+"""database.py — Modèles SQLAlchemy + connexion (Neon Postgres, repli SQLite)."""
 
+import os
 from datetime import datetime
 
 from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String,
                         create_engine)
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy.pool import NullPool
 
-CHEMIN_DB = "sqlite:///./prospection.db"
 
-engine = create_engine(CHEMIN_DB, connect_args={"check_same_thread": False})
+def _construire_engine():
+    """Choisit la base : Neon/Postgres si DATABASE_URL est défini, sinon SQLite.
+
+    Sur Vercel, le système de fichiers est en lecture seule (sauf /tmp) : le
+    repli SQLite pointe donc vers /tmp pour que l'app démarre même sans
+    DATABASE_URL, au lieu de crasher (FUNCTION_INVOCATION_FAILED).
+    """
+    url = (os.getenv("DATABASE_URL") or "").strip()
+    if url:
+        # Normalise le préfixe pour SQLAlchemy + psycopg2.
+        if url.startswith("postgres://"):
+            url = "postgresql+psycopg2://" + url[len("postgres://"):]
+        elif url.startswith("postgresql://"):
+            url = "postgresql+psycopg2://" + url[len("postgresql://"):]
+        if "sslmode=" not in url:
+            url += ("&" if "?" in url else "?") + "sslmode=require"
+        # NullPool : en serverless, chaque invocation gère sa propre connexion.
+        # À combiner avec la chaîne « -pooler » de Neon (pgbouncer).
+        return create_engine(url, poolclass=NullPool, pool_pre_ping=True)
+
+    chemin = "/tmp/prospection.db" if os.getenv("VERCEL") else "./prospection.db"
+    return create_engine(f"sqlite:///{chemin}",
+                         connect_args={"check_same_thread": False})
+
+
+engine = _construire_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -59,8 +85,11 @@ class HistoriqueRecherche(Base):
 
 
 def init_db():
-    """Crée les tables si elles n'existent pas encore."""
-    Base.metadata.create_all(bind=engine)
+    """Crée les tables si besoin. Résilient : ne fait pas planter l'import."""
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as exc:  # pragma: no cover
+        print(f"[init_db] Impossible de créer les tables : {exc}")
 
 
 def get_db():

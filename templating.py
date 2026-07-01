@@ -1,10 +1,13 @@
 """templating.py — Configuration Jinja2 et helper de rendu (injecte le jeton CSRF)."""
 
+import os
+
 from fastapi.templating import Jinja2Templates
 
 from auth import NOM_COOKIE_CSRF, DUREE_SESSION, generer_csrf
 
-templates = Jinja2Templates(directory="templates")
+_TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 
 def rendre(request, nom_template, utilisateur=None, **contexte):
