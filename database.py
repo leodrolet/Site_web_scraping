@@ -48,6 +48,9 @@ class Utilisateur(Base):
     nom = Column(String, nullable=True)
     date_creation = Column(DateTime, default=datetime.utcnow)
     actif = Column(Boolean, default=True)
+    # Compte administrateur/propriétaire (créé par setup.py).
+    admin = Column(Boolean, nullable=False, default=False,
+                   server_default="0")
     # Plan d'abonnement : "gratuit" | "pro" | "business" (voir plans.py).
     plan = Column(String, nullable=False, default="gratuit",
                   server_default="gratuit")
@@ -87,28 +90,35 @@ class HistoriqueRecherche(Base):
     utilisateur = relationship("Utilisateur", back_populates="historique")
 
 
-def _assurer_colonne_plan():
-    """Ajoute la colonne `plan` aux bases déjà existantes (SQLite et Postgres).
+# Colonnes ajoutées après la première mise en production : (nom -> définition SQL).
+# `create_all` ne modifie pas une table déjà créée, on les ajoute donc à la main.
+_COLONNES_AJOUTEES = {
+    "plan": "VARCHAR DEFAULT 'gratuit'",
+    "admin": "BOOLEAN DEFAULT 0",
+}
 
-    `create_all` ne modifie pas une table déjà créée : on ajoute donc la colonne
-    à la main si elle manque. Idempotent : ne fait rien si la colonne existe.
+
+def _assurer_colonnes_utilisateurs():
+    """Ajoute les colonnes manquantes aux bases existantes (SQLite et Postgres).
+
+    Idempotent : ne fait rien pour une colonne déjà présente.
     """
     try:
         colonnes = [c["name"] for c in inspect(engine).get_columns("utilisateurs")]
     except Exception:
-        return  # table pas encore créée : create_all s'en chargera avec la colonne
-    if "plan" not in colonnes:
-        with engine.begin() as conn:
-            conn.execute(text(
-                "ALTER TABLE utilisateurs ADD COLUMN plan VARCHAR "
-                "DEFAULT 'gratuit'"))
+        return  # table pas encore créée : create_all s'en chargera avec les colonnes
+    for nom, definition in _COLONNES_AJOUTEES.items():
+        if nom not in colonnes:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    f"ALTER TABLE utilisateurs ADD COLUMN {nom} {definition}"))
 
 
 def init_db():
     """Crée les tables si besoin. Résilient : ne fait pas planter l'import."""
     try:
         Base.metadata.create_all(bind=engine)
-        _assurer_colonne_plan()
+        _assurer_colonnes_utilisateurs()
     except Exception as exc:  # pragma: no cover
         print(f"[init_db] Impossible de créer/mettre à jour les tables : {exc}")
 
