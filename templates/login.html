@@ -4,18 +4,37 @@
 {% block content %}
 <section class="bloc centre-page">
   <div class="carte carte-form">
-    <h1>Se connecter</h1>
+    <div class="form-tete">
+      <div class="chip-ic">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h1>Se connecter</h1>
+      <p>Ravi de vous revoir sur ProspectB2B.</p>
+    </div>
 
-    {% if erreur %}<div class="alerte alerte-error">{{ erreur }}</div>{% endif %}
+    {% if erreur %}
+      <div class="alerte alerte-error">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+        {{ erreur }}
+      </div>
+    {% endif %}
 
     <form method="post" action="/login">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <label>Courriel
-        <input type="email" name="email" value="{{ email or '' }}" required autofocus>
-      </label>
-      <label>Mot de passe
-        <input type="password" name="mot_de_passe" required>
-      </label>
+      <div class="champ">
+        <label for="email">Courriel</label>
+        <div class="input-wrap">
+          <svg class="input-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+          <input type="email" id="email" name="email" value="{{ email or '' }}" required autofocus placeholder="vous@entreprise.com">
+        </div>
+      </div>
+      <div class="champ">
+        <label for="mot_de_passe">Mot de passe</label>
+        <div class="input-wrap">
+          <svg class="input-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="mot_de_passe" name="mot_de_passe" required placeholder="••••••••">
+        </div>
+      </div>
       <button class="btn btn-bloc" type="submit">Se connecter</button>
     </form>
 

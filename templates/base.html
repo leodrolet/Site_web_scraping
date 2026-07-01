@@ -4,12 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Prospection B2B{% endblock %} · ProspectB2B</title>
+  <meta name="description" content="Trouvez le bon contact marketing ou ventes d'une entreprise et exportez-le en Excel.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   <header class="nav">
     <div class="nav-inner">
-      <a class="logo" href="/">🔍 Prospect<span>B2B</span></a>
+      <a class="logo" href="/">
+        <span class="logo-mark">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <span>Prospect<b>B2B</b></span>
+      </a>
       <nav class="nav-liens">
         {% if utilisateur %}
           <a href="/app">Outil</a>
@@ -29,9 +38,17 @@
 
   <footer class="footer">
     <div class="footer-inner">
-      © 2025 ProspectB2B ·
-      <a href="mailto:contact@prospectb2b.app">Contact</a> ·
-      <a href="/confidentialite">Politique de confidentialité</a>
+      <a class="logo" href="/">
+        <span class="logo-mark">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <span>Prospect<b>B2B</b></span>
+      </a>
+      <nav class="footer-liens">
+        <span>© 2025 ProspectB2B</span>
+        <a href="mailto:contact@prospectb2b.app">Contact</a>
+        <a href="/confidentialite">Confidentialité</a>
+      </nav>
     </div>
   </footer>
 

@@ -4,66 +4,106 @@
 {% block content %}
 <section class="hero">
   <div class="hero-inner">
-    <h1>Trouvez les bons contacts B2B en quelques secondes</h1>
+    <span class="eyebrow">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3 16 9l6 3-6 3-3 6-3-6-6-3 6-3Z"/></svg>
+      Prospection B2B automatisée
+    </span>
+    <h1>Trouvez les bons contacts B2B <span class="grad">en quelques secondes</span></h1>
     <p class="hero-sous">
       Entrez un nom d'entreprise. Obtenez le bon contact marketing ou ventes
       avec son courriel — prêt à utiliser.
     </p>
-    <a class="btn btn-lg" href="/login">Essayer maintenant →</a>
+    <div class="hero-actions">
+      <a class="btn btn-lg" href="/login">
+        Essayer maintenant
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <a class="btn-ghost btn-lg" href="#comment">Voir comment ça marche</a>
+    </div>
+    <div class="hero-trust">
+      <span>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Sources vérifiées
+      </span>
+      <span>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Export Excel
+      </span>
+      <span>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Vos propres clés API
+      </span>
+    </div>
   </div>
 </section>
 
-<section class="bloc">
+<section class="bloc" id="comment">
   <h2 class="titre-section">Comment ça marche</h2>
+  <p class="section-sous">Trois étapes, aucun logiciel à installer.</p>
   <div class="grille-3">
-    <div class="carte centre">
-      <div class="emoji">🏢</div>
-      <h3>1. Entrez le nom d'une entreprise</h3>
+    <div class="carte carte-hover etape">
+      <span class="num">01</span>
+      <div class="chip-ic">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
+      </div>
+      <h3>Entrez le nom d'une entreprise</h3>
+      <p>Une recherche simple, ou tout un lot via un fichier CSV.</p>
     </div>
-    <div class="carte centre">
-      <div class="emoji">🎯</div>
-      <h3>2. Choisissez Marketing ou Ventes</h3>
+    <div class="carte carte-hover etape">
+      <span class="num">02</span>
+      <div class="chip-ic">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+      </div>
+      <h3>Choisissez Marketing ou Ventes</h3>
+      <p>On cible le bon département dans la région voulue.</p>
     </div>
-    <div class="carte centre">
-      <div class="emoji">📥</div>
-      <h3>3. Téléchargez votre fichier Excel</h3>
+    <div class="carte carte-hover etape">
+      <span class="num">03</span>
+      <div class="chip-ic">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      </div>
+      <h3>Téléchargez votre fichier Excel</h3>
+      <p>Nom, titre, courriel et localisation, prêts à l'emploi.</p>
     </div>
   </div>
 </section>
 
 <section class="bloc bloc-alt">
-  <h2 class="titre-section">Fonctionnalités</h2>
+  <h2 class="titre-section">Tout ce qu'il vous faut pour prospecter</h2>
+  <p class="section-sous">Une boîte à outils simple, construite sur des sources professionnelles.</p>
   <ul class="liste-fonctions">
-    <li>✅ Recherche par entreprise ou en lot (CSV)</li>
-    <li>✅ Courriel professionnel du contact</li>
-    <li>✅ Localisation (ville, province, pays)</li>
-    <li>✅ Export Excel formaté</li>
-    <li>✅ Sources : Hunter.io, Apollo.io, Google</li>
+    <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Recherche par entreprise ou en lot (CSV)</li>
+    <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Courriel professionnel du contact</li>
+    <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Localisation (ville, province, pays)</li>
+    <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Export Excel formaté</li>
+    <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Sources : Hunter.io, Apollo.io, Google</li>
+    <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Clés API chiffrées et privées</li>
   </ul>
 </section>
 
 <section class="bloc">
   <h2 class="titre-section">Tarifs</h2>
+  <p class="section-sous">Commencez gratuitement avec vos propres clés API.</p>
   <div class="grille-2 tarifs">
-    <div class="carte plan">
+    <div class="carte plan mise-avant">
       <h3>Starter</h3>
-      <p class="plan-prix">Gratuit pour commencer</p>
+      <p class="plan-prix"><b>0 $</b> <span>/ pour commencer</span></p>
       <ul>
-        <li>Utilisez vos propres clés API gratuites</li>
-        <li>Recherche simple et en lot</li>
-        <li>Export Excel inclus</li>
+        <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Utilisez vos propres clés API gratuites</li>
+        <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Recherche simple et en lot</li>
+        <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Export Excel inclus</li>
       </ul>
       <a class="btn" href="/inscription">Créer un compte gratuit</a>
     </div>
     <div class="carte plan plan-grise">
       <span class="ruban">Bientôt</span>
       <h3>Pro</h3>
-      <p class="plan-prix">Bientôt disponible</p>
+      <p class="plan-prix"><b>À venir</b></p>
       <ul>
-        <li>Clés API incluses</li>
-        <li>Support prioritaire</li>
+        <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Clés API incluses</li>
+        <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Support prioritaire</li>
       </ul>
-      <button class="btn" disabled>Bientôt disponible</button>
+      <button class="btn-ghost" disabled>Bientôt disponible</button>
     </div>
   </div>
 </section>
