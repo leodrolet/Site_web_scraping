@@ -55,25 +55,8 @@ class Utilisateur(Base):
     plan = Column(String, nullable=False, default="gratuit",
                   server_default="gratuit")
 
-    cles = relationship("ClesAPI", back_populates="utilisateur",
-                        uselist=False, cascade="all, delete-orphan")
     historique = relationship("HistoriqueRecherche", back_populates="utilisateur",
                              cascade="all, delete-orphan")
-
-
-class ClesAPI(Base):
-    __tablename__ = "cles_api"
-
-    id = Column(Integer, primary_key=True)
-    utilisateur_id = Column(Integer, ForeignKey("utilisateurs.id"), unique=True)
-    # Valeurs CHIFFRÉES (Fernet) — jamais stockées en clair.
-    hunter_key = Column(String, default="")
-    apollo_key = Column(String, default="")
-    serpapi_key = Column(String, default="")
-    date_modification = Column(DateTime, default=datetime.utcnow,
-                              onupdate=datetime.utcnow)
-
-    utilisateur = relationship("Utilisateur", back_populates="cles")
 
 
 class HistoriqueRecherche(Base):
@@ -114,11 +97,25 @@ def _assurer_colonnes_utilisateurs():
                     f"ALTER TABLE utilisateurs ADD COLUMN {nom} {definition}"))
 
 
+def _supprimer_table_cles_api():
+    """Supprime l'ancienne table `cles_api` (clés API désormais côté serveur).
+
+    Idempotent : ne fait rien si la table n'existe pas.
+    """
+    try:
+        if inspect(engine).has_table("cles_api"):
+            with engine.begin() as conn:
+                conn.execute(text("DROP TABLE cles_api"))
+    except Exception:
+        pass  # non bloquant
+
+
 def init_db():
     """Crée les tables si besoin. Résilient : ne fait pas planter l'import."""
     try:
         Base.metadata.create_all(bind=engine)
         _assurer_colonnes_utilisateurs()
+        _supprimer_table_cles_api()
     except Exception as exc:  # pragma: no cover
         print(f"[init_db] Impossible de créer/mettre à jour les tables : {exc}")
 

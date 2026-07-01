@@ -11,33 +11,28 @@
     <li>Votre adresse courriel et, si vous le souhaitez, votre nom.</li>
     <li>Votre mot de passe, stocké uniquement sous forme de hash (bcrypt) —
         jamais en clair.</li>
-    <li>Vos clés API (Hunter.io, Apollo.io, SerpAPI), stockées
-        <strong>chiffrées</strong> (Fernet).</li>
     <li>L'historique de vos recherches (nom d'entreprise, département, région,
         nombre de contacts trouvés).</li>
   </ul>
 
   <h2>Utilisation des données</h2>
   <p>
-    Vos clés API servent exclusivement à exécuter vos propres recherches via
-    Hunter.io, Apollo.io et Google (SerpAPI). Nous ne partageons ni ne vendons
-    vos données à des tiers.
+    Les recherches sont exécutées par notre service au moyen de nos propres
+    accès aux fournisseurs de données. Nous ne partageons ni ne vendons vos
+    données à des tiers.
   </p>
 
   <h2>Vos droits</h2>
   <p>
-    Vous pouvez à tout moment modifier ou supprimer vos clés API depuis la page
-    Paramètres. Pour supprimer votre compte et l'ensemble de vos données,
-    contactez-nous à
+    Pour supprimer votre compte et l'ensemble de vos données, contactez-nous à
     <a href="mailto:contact@prospectb2b.app">contact@prospectb2b.app</a>.
   </p>
 
   <h2>Sécurité</h2>
   <p>
-    Les mots de passe sont hachés avec bcrypt, les clés API chiffrées avec
-    Fernet, et les sessions protégées par des cookies signés expirant après
-    7 jours. Les formulaires sont protégés contre la falsification de requête
-    (CSRF).
+    Les mots de passe sont hachés avec bcrypt et les sessions protégées par des
+    cookies signés expirant après 7 jours. Les formulaires sont protégés contre
+    la falsification de requête (CSRF).
   </p>
 </section>
 {% endblock %}

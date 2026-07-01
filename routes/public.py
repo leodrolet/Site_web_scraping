@@ -18,6 +18,13 @@ def accueil(request: Request, db: Session = Depends(get_db)):
                   plans=plans.liste_plans())
 
 
+@router.get("/tarifs")
+def tarifs(request: Request, db: Session = Depends(get_db)):
+    utilisateur = utilisateur_actuel(request, db)
+    return rendre(request, "tarifs.html", utilisateur=utilisateur,
+                  plans=plans.liste_plans())
+
+
 @router.get("/confidentialite")
 def confidentialite(request: Request, db: Session = Depends(get_db)):
     utilisateur = utilisateur_actuel(request, db)

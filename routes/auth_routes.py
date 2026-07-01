@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from auth import (creer_session, detruire_session, hasher_mot_de_passe,
                  utilisateur_actuel, valider_csrf, verifier_mot_de_passe)
-from database import ClesAPI, Utilisateur, get_db
+from database import Utilisateur, get_db
 from templating import rendre
 
 router = APIRouter()
@@ -90,11 +90,8 @@ def soumettre_inscription(request: Request,
     db.commit()
     db.refresh(utilisateur)
 
-    db.add(ClesAPI(utilisateur_id=utilisateur.id))
-    db.commit()
-
-    # Redirige vers /parametres pour saisir les clés API tout de suite.
-    reponse = RedirectResponse("/parametres?bienvenue=1", status_code=303)
+    # L'outil fonctionne directement : redirige vers /app.
+    reponse = RedirectResponse("/app", status_code=303)
     creer_session(reponse, utilisateur.id)
     return reponse
 

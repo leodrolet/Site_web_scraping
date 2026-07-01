@@ -17,10 +17,10 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-from auth import RedirectionConnexion  # noqa: E402
+from auth import RedirectionConnexion, RedirectionNonAutorise  # noqa: E402
 from database import init_db  # noqa: E402
-from routes import (app_routes, auth_routes, plan_routes, public,  # noqa: E402
-                    settings_routes)
+from routes import (admin_routes, app_routes, auth_routes,  # noqa: E402
+                    plan_routes, public)
 
 app = FastAPI(title="Outil de prospection B2B")
 
@@ -37,8 +37,14 @@ async def _rediriger_vers_login(request, exc):
     return RedirectResponse("/login", status_code=303)
 
 
+@app.exception_handler(RedirectionNonAutorise)
+async def _rediriger_vers_app(request, exc):
+    """Quand un non-admin appelle une route /admin -> retour à l'outil."""
+    return RedirectResponse("/app", status_code=303)
+
+
 app.include_router(public.router)
 app.include_router(auth_routes.router)
 app.include_router(app_routes.router)
-app.include_router(settings_routes.router)
 app.include_router(plan_routes.router)
+app.include_router(admin_routes.router)

@@ -2,7 +2,9 @@
 
 Application web qui trouve automatiquement le bon contact marketing ou ventes
 d'une entreprise (nom, titre, courriel, localisation) et l'exporte en Excel.
-Chaque utilisateur crée un compte et saisit **ses propres** clés API.
+Les utilisateurs créent un compte (email + mot de passe) et utilisent l'outil
+directement. Les clés API sont côté **serveur** (fichier `.env`) : jamais
+visibles ni saisies par les utilisateurs.
 
 ---
 
@@ -12,7 +14,7 @@ Deux choses cohabitent dans ce dossier :
 
 | Partie | Fichiers | Rôle |
 |---|---|---|
-| **Site web** (nouveau) | `main.py`, `database.py`, `auth.py`, `templating.py`, `routes/`, `templates/`, `static/` | FastAPI + Jinja2 : accueil, login, app, paramètres |
+| **Site web** | `main.py`, `database.py`, `auth.py`, `templating.py`, `routes/`, `templates/`, `static/` | FastAPI + Jinja2 : accueil, login, app, admin |
 | **Moteur** (inchangé) | `recherche.py`, `export.py`, `config.py` | Recherche Hunter/Apollo/SerpAPI + génération Excel |
 
 - **Backend** : FastAPI · **Templates** : Jinja2 (HTML/CSS pur, sans framework)
@@ -20,11 +22,12 @@ Deux choses cohabitent dans ce dossier :
   est défini, sinon **repli automatique sur SQLite** (fichier `prospection.db`
   en local, ou `/tmp` sur Vercel). Les tables sont créées automatiquement.
 - **Sécurité** : mots de passe hachés (bcrypt), sessions par cookie signé
-  (itsdangerous, 7 jours), clés API chiffrées en base (Fernet), protection CSRF.
+  (itsdangerous, 7 jours), protection CSRF.
 
-> Les clés API ne sont **plus** dans `.env` : chaque utilisateur saisit les
-> siennes dans `/parametres`. `config.py` les fournit au moteur par requête,
-> sans modifier `recherche.py`.
+> Les clés API (Hunter/Apollo/SerpAPI) sont lues **uniquement** depuis `.env`
+> côté serveur (`config.py` → `os.getenv`). Elles ne transitent jamais par la
+> base de données, les routes, le HTML ou le JavaScript. Seul l'admin voit leur
+> statut (connectée / manquante) dans `/admin`.
 
 ---
 
@@ -54,10 +57,24 @@ Colle la valeur affichée dans `.env`, après `SECRET_KEY=` :
 SECRET_KEY=la_longue_valeur_generee_ici
 ```
 
-> Cette clé chiffre les clés API stockées. Si tu la changes plus tard, les
-> clés API déjà enregistrées devront être ressaisies.
+> Cette clé signe les sessions. Si tu la changes, les utilisateurs connectés
+> devront se reconnecter.
 
-## Étape 3 — Lancer le site en local
+Ajoute ensuite tes clés API du service dans `.env` (au moins Hunter.io) :
+
+```
+HUNTER_API_KEY=ta_cle_hunter
+APOLLO_API_KEY=ta_cle_apollo
+SERPAPI_KEY=ta_cle_serpapi
+```
+
+## Étape 3 — Créer ton compte administrateur
+
+```bash
+python3 setup.py
+```
+
+## Étape 4 — Lancer le site en local
 
 ```bash
 uvicorn main:app --reload
@@ -65,19 +82,17 @@ uvicorn main:app --reload
 
 Ouvre ensuite **<http://localhost:8000>**.
 
-## Étape 4 — Utiliser
+## Étape 5 — Utiliser
 
 1. Page d'accueil → **Essayer maintenant** → **Créer un compte**.
-2. Tu es redirigé vers **Paramètres** : saisis au moins ta clé **Hunter.io**
-   (Apollo et SerpAPI sont optionnels), puis **Sauvegarder**.
-3. Va dans **Outil** :
+2. Tu arrives directement dans l'**Outil** (aucune configuration à faire) :
    - *Recherche simple* : nom d'entreprise + département + région → **Rechercher**.
    - *Recherche en lot* : téléverse un CSV (`entreprise, departement, region`).
-4. Clique **📥 Télécharger Excel**.
+3. Clique **📥 Télécharger Excel**.
 
 ---
 
-## Où trouver les clés API
+## Où trouver les clés API (pour le `.env` du serveur)
 
 | Service | Lien |
 |---|---|
@@ -100,8 +115,9 @@ Variables d'environnement à définir en production (jamais committer `.env`) :
 
 | Variable | Rôle |
 |---|---|
-| `SECRET_KEY` | Signe les sessions **et** chiffre les clés API. Obligatoire. |
-| `DATABASE_URL` | Connexion Neon/PostgreSQL. Absente → repli SQLite. |
+| `SECRET_KEY` | Signe les sessions. Obligatoire. |
+| `DATABASE_URL` | Connexion Neon/PostgreSQL. **Obligatoire en prod** (sinon SQLite `/tmp` éphémère sur Vercel = comptes perdus à chaque déploiement). |
+| `HUNTER_API_KEY` / `APOLLO_API_KEY` / `SERPAPI_KEY` | Clés du service, côté serveur. Au moins Hunter.io. |
 | `COOKIE_SECURE` | `true` pour n'envoyer les cookies qu'en HTTPS. Auto-activé sur Vercel. |
 
 - Sers le site en **HTTPS**. Les cookies passent en `secure` automatiquement
@@ -117,7 +133,8 @@ Variables d'environnement à définir en production (jamais committer `.env`) :
   chaque redémarrage.
 - **`command not found: uvicorn`** → l'environnement n'est pas activé
   (`source venv/bin/activate`).
-- **« Aucune clé API configurée »** dans l'outil → va dans `/parametres`.
+- **« Service temporairement indisponible »** dans l'outil → vérifie tes clés
+  API dans `.env` (statut visible dans `/admin`).
 - **Repartir de zéro** → supprime le fichier `prospection.db`
   (toutes les données utilisateurs sont effacées).
 

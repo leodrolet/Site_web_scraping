@@ -1,16 +1,12 @@
 """
 auth.py — Sécurité : hashage des mots de passe (bcrypt), sessions signées
-(itsdangerous), chiffrement des clés API (Fernet), protection CSRF, et
-dépendances de contrôle d'accès.
+(itsdangerous), protection CSRF, et dépendances de contrôle d'accès.
 """
 
-import base64
-import hashlib
 import os
 import secrets
 
 import bcrypt
-from cryptography.fernet import Fernet, InvalidToken
 from fastapi import Depends, Request
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import Session
@@ -18,14 +14,14 @@ from sqlalchemy.orm import Session
 from database import Utilisateur, get_db
 
 # ----------------------------------------------------------------------
-# Clé secrète (sessions + dérivation de la clé de chiffrement)
+# Clé secrète (signature des sessions)
 # ----------------------------------------------------------------------
 SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 if not SECRET_KEY:
     SECRET_KEY = secrets.token_hex(32)
     print("⚠️  SECRET_KEY absente du .env : une clé temporaire a été générée. "
-          "Les sessions et les clés API chiffrées seront invalidées au "
-          "redémarrage. Ajoute une SECRET_KEY dans .env (voir README).")
+          "Les sessions seront invalidées au redémarrage. "
+          "Ajoute une SECRET_KEY dans .env (voir README).")
 
 DUREE_SESSION = 7 * 24 * 3600  # 7 jours, en secondes
 NOM_COOKIE_SESSION = "session"
@@ -40,10 +36,6 @@ COOKIE_SECURE = (
 )
 
 _serializer = URLSafeTimedSerializer(SECRET_KEY, salt="session-utilisateur")
-
-# Clé Fernet déterministe dérivée de SECRET_KEY (32 octets -> base64 urlsafe).
-_fernet = Fernet(base64.urlsafe_b64encode(
-    hashlib.sha256(SECRET_KEY.encode()).digest()))
 
 
 # ----------------------------------------------------------------------
@@ -60,25 +52,6 @@ def verifier_mot_de_passe(mot_de_passe: str, hash_stocke: str) -> bool:
                               hash_stocke.encode("utf-8"))
     except (ValueError, TypeError):
         return False
-
-
-# ----------------------------------------------------------------------
-# Chiffrement des clés API
-# ----------------------------------------------------------------------
-def chiffrer(valeur: str) -> str:
-    valeur = (valeur or "").strip()
-    if not valeur:
-        return ""
-    return _fernet.encrypt(valeur.encode("utf-8")).decode("utf-8")
-
-
-def dechiffrer(jeton: str) -> str:
-    if not jeton:
-        return ""
-    try:
-        return _fernet.decrypt(jeton.encode("utf-8")).decode("utf-8")
-    except (InvalidToken, ValueError):
-        return ""
 
 
 # ----------------------------------------------------------------------
@@ -122,6 +95,25 @@ def exiger_connexion(request: Request,
     if utilisateur is None:
         raise RedirectionConnexion()
     return utilisateur
+
+
+def exiger_admin(request: Request,
+                db: Session = Depends(get_db)) -> Utilisateur:
+    """Dépendance : impose un compte administrateur (admin=True).
+
+    Non connecté  -> redirection /login (comme exiger_connexion).
+    Connecté mais non-admin -> redirection /app (pas d'accès au panneau).
+    """
+    utilisateur = utilisateur_actuel(request, db)
+    if utilisateur is None:
+        raise RedirectionConnexion()
+    if not getattr(utilisateur, "admin", False):
+        raise RedirectionNonAutorise()
+    return utilisateur
+
+
+class RedirectionNonAutorise(Exception):
+    """Levée par exiger_admin quand l'utilisateur n'est pas administrateur."""
 
 
 # ----------------------------------------------------------------------

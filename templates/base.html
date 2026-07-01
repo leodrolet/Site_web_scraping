@@ -22,8 +22,8 @@
       <nav class="nav-liens">
         {% if utilisateur %}
           <a href="/app">Outil</a>
-          <a href="/abonnement">Abonnement</a>
-          <a href="/parametres">Paramètres</a>
+          <a href="/abonnement">Mon compte</a>
+          {% if utilisateur.admin %}<a href="/admin">Admin</a>{% endif %}
           <a class="btn-ghost" href="/logout">Déconnexion</a>
         {% else %}
           <a href="/login">Se connecter</a>

@@ -54,7 +54,7 @@ def main():
     if not os.getenv("SECRET_KEY", "").strip():
         print("\n[!] Aucune SECRET_KEY dans .env : une clé temporaire sera "
               "utilisee. Ajoute une SECRET_KEY avant la mise en production "
-              "(sinon sessions et cles API chiffrees seront invalidees).")
+              "(sinon les sessions seront invalidees a chaque redemarrage).")
 
     url = (os.getenv("DATABASE_URL") or "").strip()
     print(f"\n>> Base de donnees : "
@@ -62,7 +62,7 @@ def main():
 
     # Imports tardifs : après load_dotenv, pour que la config lise le .env.
     from auth import hasher_mot_de_passe
-    from database import ClesAPI, SessionLocal, Utilisateur, init_db
+    from database import SessionLocal, Utilisateur, init_db
 
     print(">> Creation / mise a jour des tables...")
     init_db()
@@ -102,10 +102,9 @@ def main():
         db.add(admin)
         db.commit()
         db.refresh(admin)
-        db.add(ClesAPI(utilisateur_id=admin.id))
-        db.commit()
         print(f"\n[OK] Compte administrateur cree : « {email} » (plan business).")
-        print("     Connecte-toi sur /login, puis ajoute tes cles API dans /parametres.")
+        print("     Connecte-toi sur /login. Les cles API sont lues depuis .env "
+              "(cote serveur) — rien a configurer dans l'interface.")
     finally:
         db.close()
 

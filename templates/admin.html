@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Administration{% endblock %}
+
+{% block content %}
+<section class="bloc">
+  <h1 class="titre-section">Panneau d'administration</h1>
+  <p class="section-sous">Comptes, plans et usage de ProspectB2B.</p>
+
+  <!-- Statistiques -->
+  <div class="grille-3" style="margin-bottom:28px;">
+    <div class="carte">
+      <p class="muted">Comptes</p>
+      <p style="font-size:2rem;font-weight:800;margin:.2rem 0;">{{ stats.total }}</p>
+      <p class="muted">{{ stats.actifs }} actifs · {{ stats.inactifs }} désactivés</p>
+    </div>
+    <div class="carte">
+      <p class="muted">Recherches (total)</p>
+      <p style="font-size:2rem;font-weight:800;margin:.2rem 0;">{{ stats.recherches }}</p>
+      <p class="muted">Entreprises interrogées</p>
+    </div>
+    <div class="carte">
+      <p class="muted">Répartition des plans</p>
+      {% for p in plans %}
+        <p style="display:flex;justify-content:space-between;margin:.25rem 0;">
+          <span>{{ p.nom }}</span><b>{{ stats.par_plan[p.cle] }}</b>
+        </p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Statut des APIs (serveur) — visible par l'admin uniquement -->
+  <div class="carte" style="margin-bottom:28px;">
+    <p class="muted" style="margin-bottom:10px;">Statut des APIs (clés serveur, lues depuis .env)</p>
+    <div class="grille-3">
+      {% for service, ok in apis.items() %}
+        <p style="display:flex;align-items:center;gap:8px;margin:.25rem 0;">
+          {% if ok %}
+            <span style="color:#16a34a;font-weight:700;">✅</span>
+            <span>{{ service }} — <b style="color:#16a34a;">connectée</b></span>
+          {% else %}
+            <span style="color:#dc2626;font-weight:700;">❌</span>
+            <span>{{ service }} — <b style="color:#dc2626;">clé manquante</b></span>
+          {% endif %}
+        </p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Liste des utilisateurs -->
+  <div class="carte" style="overflow-x:auto;">
+    <table class="table-admin" style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid var(--bordure,#e5e7eb);">
+          <th style="padding:10px;">Courriel</th>
+          <th style="padding:10px;">Nom</th>
+          <th style="padding:10px;">Plan</th>
+          <th style="padding:10px;">Usage (mois)</th>
+          <th style="padding:10px;">Statut</th>
+          <th style="padding:10px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in utilisateurs %}
+          <tr style="border-bottom:1px solid var(--bordure,#eef0f3);">
+            <td style="padding:10px;">
+              {{ l.u.email }}
+              {% if l.u.admin %}<span class="ruban" style="position:static;margin-left:6px;">admin</span>{% endif %}
+            </td>
+            <td style="padding:10px;">{{ l.u.nom or '—' }}</td>
+            <td style="padding:10px;">
+              <form method="post" action="/admin/utilisateur/{{ l.u.id }}/plan"
+                    style="display:flex;gap:6px;align-items:center;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <select name="plan">
+                  {% for p in plans %}
+                    <option value="{{ p.cle }}" {% if p.cle == l.plan_infos.cle %}selected{% endif %}>{{ p.nom }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn-ghost" type="submit">OK</button>
+              </form>
+            </td>
+            <td style="padding:10px;">
+              {{ l.utilisees_mois }}{% if l.plan_infos.limite %} / {{ l.plan_infos.limite }}{% else %} / ∞{% endif %}
+            </td>
+            <td style="padding:10px;">
+              {% if l.u.actif %}
+                <span style="color:#16a34a;font-weight:600;">Actif</span>
+              {% else %}
+                <span style="color:#dc2626;font-weight:600;">Désactivé</span>
+              {% endif %}
+            </td>
+            <td style="padding:10px;">
+              {% if l.u.id == moi %}
+                <span class="muted">— vous —</span>
+              {% else %}
+                <form method="post" action="/admin/utilisateur/{{ l.u.id }}/actif">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button class="{% if l.u.actif %}btn-ghost{% else %}btn{% endif %}" type="submit">
+                    {% if l.u.actif %}Désactiver{% else %}Activer{% endif %}
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

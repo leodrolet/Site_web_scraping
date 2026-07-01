@@ -1,10 +1,11 @@
 """
 app_routes.py — Outil de prospection (connexion requise).
 
-Réutilise tel quel recherche.rechercher_entreprise() et export.generer_excel().
-Les clés API de l'utilisateur connecté sont injectées dans `config` (ContextVar)
-juste avant chaque recherche. Les résultats sont sérialisés dans un champ caché
-afin que le téléchargement Excel ne reconsomme pas de quota API.
+Réutilise recherche.rechercher_entreprise() et export.generer_excel().
+Les clés API sont lues côté serveur depuis l'environnement (voir config.py) :
+elles ne transitent jamais par la base, les routes ou le HTML. En cas d'échec
+d'un service externe, l'utilisateur voit un message générique — jamais le nom
+du service ni le détail de l'erreur.
 """
 
 import base64
@@ -17,10 +18,9 @@ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-import config
 import plans
-from auth import dechiffrer, exiger_connexion, valider_csrf
-from database import ClesAPI, HistoriqueRecherche, Utilisateur, get_db
+from auth import exiger_connexion, valider_csrf
+from database import HistoriqueRecherche, Utilisateur, get_db
 from export import COLONNES, generer_excel
 from recherche import ErreurAPI, rechercher_entreprise
 from templating import rendre
@@ -30,28 +30,17 @@ router = APIRouter()
 DEPARTEMENTS = ["Marketing", "Ventes", "Les deux"]
 REGIONS = ["Canada", "États-Unis", "Europe", "Toutes"]
 
+# Message unique montré à l'utilisateur quand un service externe échoue.
+# Aucun détail sur le service concerné ni la cause (clé, quota...).
+MSG_SERVICE_INDISPO = ("Service temporairement indisponible. "
+                       "Merci de réessayer dans quelques instants.")
+
 _BASE = dict(colonnes=COLONNES, departements=DEPARTEMENTS, regions=REGIONS)
 
 
 # ----------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------
-def _cles_utilisateur(db, utilisateur):
-    cles = db.query(ClesAPI).filter(
-        ClesAPI.utilisateur_id == utilisateur.id).first()
-    if cles is None:
-        return "", "", ""
-    return (dechiffrer(cles.hunter_key), dechiffrer(cles.apollo_key),
-            dechiffrer(cles.serpapi_key))
-
-
-def _activer_cles(db, utilisateur) -> bool:
-    """Dépose les clés de l'utilisateur dans config. Retourne True si au moins une."""
-    hunter, apollo, serpapi = _cles_utilisateur(db, utilisateur)
-    config.definir_cles(hunter=hunter, apollo=apollo, serpapi=serpapi)
-    return any([hunter, apollo, serpapi])
-
-
 def _encoder(resultats):
     return base64.urlsafe_b64encode(
         json.dumps(resultats).encode("utf-8")).decode("ascii")
@@ -93,10 +82,8 @@ def _contexte_app(db, utilisateur, **extra):
 def page_app(request: Request,
             utilisateur: Utilisateur = Depends(exiger_connexion),
             db: Session = Depends(get_db)):
-    hunter, apollo, serpapi = _cles_utilisateur(db, utilisateur)
     return rendre(request, "app.html", utilisateur=utilisateur,
                   **_contexte_app(db, utilisateur,
-                                  cles_configurees=any([hunter, apollo, serpapi]),
                                   departement="Les deux", region="Canada"))
 
 
@@ -114,34 +101,28 @@ def recherche_simple(request: Request,
     if not valider_csrf(request, csrf_token):
         return rendre(request, "app.html", utilisateur=utilisateur,
                       **_contexte_app(db, utilisateur,
-                                      cles_configurees=_activer_cles(db, utilisateur),
                                       erreur="Session expirée, merci de réessayer."))
-
-    if not _activer_cles(db, utilisateur):
-        return rendre(request, "app.html", utilisateur=utilisateur,
-                      **_contexte_app(db, utilisateur, cles_configurees=False,
-                                      departement=departement, region=region))
 
     # Blocage quota : le plan de l'utilisateur est épuisé pour ce mois.
     if plans.etat_quota(db, utilisateur)["depasse"]:
         return rendre(request, "app.html", utilisateur=utilisateur,
-                      **_contexte_app(db, utilisateur, cles_configurees=True,
+                      **_contexte_app(db, utilisateur,
                                       departement=departement, region=region))
 
     try:
         res = rechercher_entreprise(entreprise, departement, region)
-        contacts, avertissements, erreur = res["contacts"], res["avertissements"], None
-    except ErreurAPI as e:
-        contacts, avertissements, erreur = [], [], e.message
+        contacts, erreur = res["contacts"], None
+    except ErreurAPI:
+        # On masque le détail (service / clé / quota) : message générique.
+        contacts, erreur = [], MSG_SERVICE_INDISPO
 
     if contacts:
         _journaliser(db, utilisateur, entreprise, departement, region, contacts)
         db.commit()
 
     return rendre(request, "app.html", utilisateur=utilisateur,
-                  **_contexte_app(db, utilisateur, cles_configurees=True,
-                                  resultats=contacts, avertissements=avertissements,
-                                  erreur=erreur,
+                  **_contexte_app(db, utilisateur,
+                                  resultats=contacts, erreur=erreur,
                                   charge=_encoder(contacts) if contacts else "",
                                   entreprise=entreprise, departement=departement,
                                   region=region))
@@ -159,18 +140,13 @@ def recherche_lot(request: Request,
     if not valider_csrf(request, csrf_token):
         return rendre(request, "app.html", utilisateur=utilisateur,
                       **_contexte_app(db, utilisateur,
-                                      cles_configurees=_activer_cles(db, utilisateur),
                                       erreur="Session expirée, merci de réessayer."))
-
-    if not _activer_cles(db, utilisateur):
-        return rendre(request, "app.html", utilisateur=utilisateur,
-                      **_contexte_app(db, utilisateur, cles_configurees=False))
 
     # Blocage quota : plan épuisé pour ce mois -> on ne traite rien.
     etat = plans.etat_quota(db, utilisateur)
     if etat["depasse"]:
         return rendre(request, "app.html", utilisateur=utilisateur,
-                      **_contexte_app(db, utilisateur, cles_configurees=True))
+                      **_contexte_app(db, utilisateur))
 
     contenu = fichier.file.read().decode("utf-8-sig", errors="replace")
     lecteur = csv.DictReader(io.StringIO(contenu))
@@ -180,19 +156,18 @@ def recherche_lot(request: Request,
     requises = {"entreprise", "departement", "region"}
     if not lignes or not requises.issubset(set(lignes[0].keys())):
         return rendre(request, "app.html", utilisateur=utilisateur,
-                      **_contexte_app(db, utilisateur, cles_configurees=True,
+                      **_contexte_app(db, utilisateur,
                                       erreur="Le CSV doit contenir les colonnes : "
                                              "entreprise, departement, region."))
 
     # Budget de recherches restant ce mois (None = illimité).
     budget = etat["restantes"]
-    tous, avertissements, erreur = [], [], None
+    tous, erreur = [], None
     for ligne in lignes:
         if budget is not None and budget <= 0:
-            avertissements.append(
-                "Limite mensuelle atteinte : les entreprises restantes du "
-                "fichier n'ont pas été traitées. Passez à un plan supérieur "
-                "pour en faire plus.")
+            erreur = ("Limite mensuelle atteinte : les entreprises restantes du "
+                      "fichier n'ont pas été traitées. Passez à un plan supérieur "
+                      "pour en faire plus.")
             break
         ent = ligne.get("entreprise", "")
         if not ent:
@@ -201,20 +176,18 @@ def recherche_lot(request: Request,
         reg = ligne.get("region") or "Toutes"
         try:
             res = rechercher_entreprise(ent, dep, reg)
-        except ErreurAPI as e:
-            erreur = e.message  # quota/clé épuisé : on s'arrête, on garde l'acquis
+        except ErreurAPI:
+            erreur = MSG_SERVICE_INDISPO  # on s'arrête, on garde l'acquis
             break
         tous.extend(res["contacts"])
-        avertissements.extend(res["avertissements"])
         _journaliser(db, utilisateur, ent, dep, reg, res["contacts"])
         if budget is not None:
             budget -= 1
     db.commit()
 
     return rendre(request, "app.html", utilisateur=utilisateur,
-                  **_contexte_app(db, utilisateur, cles_configurees=True,
-                                  resultats=tous, avertissements=avertissements,
-                                  erreur=erreur,
+                  **_contexte_app(db, utilisateur,
+                                  resultats=tous, erreur=erreur,
                                   charge=_encoder(tous) if tous else ""))
 
 

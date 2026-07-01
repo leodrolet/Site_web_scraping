@@ -35,13 +35,6 @@
     </div>
   {% endif %}
 
-  {% if not cles_configurees %}
-    <div class="alerte alerte-warn">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
-      <span>Aucune clé API configurée. Va dans <a href="/parametres">Paramètres</a> pour ajouter au moins ta clé Hunter.io.</span>
-    </div>
-  {% endif %}
-
   {% if erreur %}
     <div class="alerte alerte-error">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
@@ -109,17 +102,6 @@
       <div class="progress" hidden><div class="barre"></div></div>
     </form>
   </div>
-
-  {% if avertissements %}
-    <div class="avertissements">
-      {% for a in avertissements %}
-        <div class="alerte alerte-info">
-          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
-          <span>{{ a }}</span>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
 
   {% if resultats is defined and resultats %}
     <div class="resultats">

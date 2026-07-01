@@ -1,4 +1,4 @@
-// app.js — interactions minimales (onglets, progression, affichage des clés)
+// app.js — interactions minimales (onglets, progression)
 
 // --- Onglets de l'application ---
 document.querySelectorAll('.tab').forEach(function (bouton) {
@@ -21,20 +21,5 @@ document.querySelectorAll('form[data-loading]').forEach(function (form) {
       bouton.textContent = 'Recherche en cours…';
     }
     if (prog) { prog.hidden = false; }
-  });
-});
-
-// --- Afficher / masquer les clés API ---
-document.querySelectorAll('.toggle').forEach(function (bouton) {
-  bouton.addEventListener('click', function () {
-    var champ = document.getElementById(bouton.dataset.cible);
-    if (!champ) { return; }
-    if (champ.type === 'password') {
-      champ.type = 'text';
-      bouton.textContent = 'Masquer';
-    } else {
-      champ.type = 'password';
-      bouton.textContent = 'Afficher';
-    }
   });
 });
