@@ -112,8 +112,9 @@ def recherche_simple(request: Request,
     try:
         res = rechercher_entreprise(entreprise, departement, region)
         contacts, erreur = res["contacts"], None
-    except ErreurAPI:
-        # On masque le détail (service / clé / quota) : message générique.
+    except ErreurAPI as e:
+        # Détail journalisé côté serveur (logs Vercel) ; message générique à l'écran.
+        print(f"[/app/recherche] ErreurAPI : {e.message}", flush=True)
         contacts, erreur = [], MSG_SERVICE_INDISPO
 
     if contacts:
@@ -176,7 +177,8 @@ def recherche_lot(request: Request,
         reg = ligne.get("region") or "Toutes"
         try:
             res = rechercher_entreprise(ent, dep, reg)
-        except ErreurAPI:
+        except ErreurAPI as e:
+            print(f"[/app/lot] ErreurAPI : {e.message}", flush=True)
             erreur = MSG_SERVICE_INDISPO  # on s'arrête, on garde l'acquis
             break
         tous.extend(res["contacts"])

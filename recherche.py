@@ -290,8 +290,13 @@ def rechercher_entreprise(entreprise, departement="Les deux", region="Toutes"):
 
     Retourne un dict : {"contacts": [...], "avertissements": [...]}.
     `contacts` contient toujours au moins une ligne (une fiche « non trouvé »
-    si aucune piste). Lève `ErreurAPI` uniquement en cas de blocage d'un
-    service (clé invalide / quota épuisé).
+    si aucune piste).
+
+    Résilience : si un fournisseur échoue (clé invalide, quota épuisé...), on
+    journalise le détail côté serveur (visible dans les logs Vercel) et on passe
+    au fournisseur suivant. `ErreurAPI` n'est levée QUE si **tous** les
+    fournisseurs tentés échouent (aucun n'a pu répondre) — dans ce cas seulement
+    l'utilisateur voit le message générique « Service temporairement indisponible ».
     """
     entreprise = (entreprise or "").strip()
     if not entreprise:
@@ -303,31 +308,54 @@ def rechercher_entreprise(entreprise, departement="Les deux", region="Toutes"):
         region = "Toutes"
 
     avertissements = []
+    erreurs = []          # ErreurAPI attrapées, par fournisseur
+    un_fournisseur_a_repondu = False  # au moins un appel sans erreur bloquante
 
     # Étapes A / B — Hunter.io
-    contacts, av = _hunter_domain_search(entreprise, departement, region)
-    avertissements += av
-    if contacts:
-        return {"contacts": contacts, "avertissements": avertissements}
+    try:
+        contacts, av = _hunter_domain_search(entreprise, departement, region)
+        un_fournisseur_a_repondu = True
+        avertissements += av
+        if contacts:
+            return {"contacts": contacts, "avertissements": avertissements}
+    except ErreurAPI as e:
+        print(f"[recherche] Hunter.io indisponible : {e.message}", flush=True)
+        erreurs.append(e)
 
     # Étape C — Apollo.io
-    contacts, av = _apollo_search(entreprise, departement, region)
-    avertissements += av
-    if contacts:
-        return {"contacts": contacts, "avertissements": avertissements}
+    try:
+        contacts, av = _apollo_search(entreprise, departement, region)
+        un_fournisseur_a_repondu = True
+        avertissements += av
+        if contacts:
+            return {"contacts": contacts, "avertissements": avertissements}
+    except ErreurAPI as e:
+        print(f"[recherche] Apollo.io indisponible : {e.message}", flush=True)
+        erreurs.append(e)
 
     # Étape D — SerpAPI (repli Google)
-    lien, note = _serpapi_fallback(entreprise, departement)
-    if note:
-        avertissements.append(note)
-    if lien:
-        fiche = _fiche_vide(
-            entreprise,
-            "Piste LinkedIn — vérification manuelle requise",
-            source=lien,
-        )
-        return {"contacts": [fiche], "avertissements": avertissements}
+    try:
+        lien, note = _serpapi_fallback(entreprise, departement)
+        un_fournisseur_a_repondu = True
+        if note:
+            avertissements.append(note)
+        if lien:
+            fiche = _fiche_vide(
+                entreprise,
+                "Piste LinkedIn — vérification manuelle requise",
+                source=lien,
+            )
+            return {"contacts": [fiche], "avertissements": avertissements}
+    except ErreurAPI as e:
+        print(f"[recherche] SerpAPI indisponible : {e.message}", flush=True)
+        erreurs.append(e)
 
-    # Aucune piste
+    # Tous les fournisseurs tentés ont échoué en erreur bloquante : on remonte.
+    if erreurs and not un_fournisseur_a_repondu:
+        raise ErreurAPI(
+            "Tous les fournisseurs de données sont indisponibles : "
+            + " | ".join(e.message for e in erreurs))
+
+    # Aucune piste (mais au moins un fournisseur a répondu normalement).
     fiche = _fiche_vide(entreprise, "Non trouvé — vérification manuelle requise")
     return {"contacts": [fiche], "avertissements": avertissements}
