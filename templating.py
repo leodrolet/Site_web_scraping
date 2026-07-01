@@ -4,7 +4,7 @@ import os
 
 from fastapi.templating import Jinja2Templates
 
-from auth import NOM_COOKIE_CSRF, DUREE_SESSION, generer_csrf
+from auth import COOKIE_SECURE, NOM_COOKIE_CSRF, DUREE_SESSION, generer_csrf
 
 _TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
@@ -26,5 +26,5 @@ def rendre(request, nom_template, utilisateur=None, **contexte):
                                          context=donnees)
     reponse.set_cookie(NOM_COOKIE_CSRF, jeton_csrf,
                        max_age=DUREE_SESSION, httponly=True,
-                       samesite="lax", secure=False)
+                       samesite="lax", secure=COOKIE_SECURE)
     return reponse

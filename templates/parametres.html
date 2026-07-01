@@ -39,13 +39,13 @@
       ("serpapi", "SerpAPI Key", serpapi, "https://serpapi.com/manage-api-key")
     ] %}
 
-    {% for nom, libelle, valeur, lien in champs %}
+    {% for nom, libelle, presente, lien in champs %}
       <div class="champ-cle">
         <div class="champ-tete">
           <label for="{{ nom }}">
             <svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 8.3-8.3"/><path d="m16 6 2 2M19 3l2 2"/></svg>
             {{ libelle }}
-            {% if valeur %}
+            {% if presente %}
               <span class="badge ok">
                 <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                 configurée
@@ -63,8 +63,8 @@
           </a>
         </div>
         <div class="champ-saisie">
-          <input type="password" id="{{ nom }}" name="{{ nom }}"
-                 value="{{ valeur }}" autocomplete="off" placeholder="Collez votre clé ici">
+          <input type="password" id="{{ nom }}" name="{{ nom }}" autocomplete="off"
+                 placeholder="{% if presente %}Clé enregistrée — laissez vide pour la conserver{% else %}Collez votre clé ici{% endif %}">
           <button type="button" class="toggle" data-cible="{{ nom }}">Afficher</button>
         </div>
       </div>

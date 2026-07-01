@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from auth import chiffrer, dechiffrer, exiger_connexion, valider_csrf
+from auth import chiffrer, exiger_connexion, valider_csrf
 from database import ClesAPI, Utilisateur, get_db
 from templating import rendre
 
@@ -27,10 +27,12 @@ def page_parametres(request: Request, bienvenue: int = 0, sauvegarde: int = 0,
                    utilisateur: Utilisateur = Depends(exiger_connexion),
                    db: Session = Depends(get_db)):
     cles = _obtenir_cles(db, utilisateur)
+    # On n'envoie JAMAIS la clé déchiffrée au navigateur : seulement l'info
+    # « une clé est enregistrée ou non » (booléen). Les champs restent vides.
     return rendre(request, "parametres.html", utilisateur=utilisateur,
-                  hunter=dechiffrer(cles.hunter_key),
-                  apollo=dechiffrer(cles.apollo_key),
-                  serpapi=dechiffrer(cles.serpapi_key),
+                  hunter=bool(cles.hunter_key),
+                  apollo=bool(cles.apollo_key),
+                  serpapi=bool(cles.serpapi_key),
                   bienvenue=bool(bienvenue), sauvegarde=bool(sauvegarde))
 
 
@@ -42,15 +44,22 @@ def sauver_parametres(request: Request,
                      csrf_token: str = Form(""),
                      utilisateur: Utilisateur = Depends(exiger_connexion),
                      db: Session = Depends(get_db)):
+    cles = _obtenir_cles(db, utilisateur)
+
     if not valider_csrf(request, csrf_token):
         return rendre(request, "parametres.html", utilisateur=utilisateur,
-                      hunter=hunter, apollo=apollo, serpapi=serpapi,
+                      hunter=bool(cles.hunter_key), apollo=bool(cles.apollo_key),
+                      serpapi=bool(cles.serpapi_key),
                       erreur="Session expirée, merci de réessayer.")
 
-    cles = _obtenir_cles(db, utilisateur)
-    cles.hunter_key = chiffrer(hunter)
-    cles.apollo_key = chiffrer(apollo)
-    cles.serpapi_key = chiffrer(serpapi)
+    # Un champ laissé vide conserve la clé déjà enregistrée (évite d'effacer
+    # une clé par mégarde). Seuls les champs renseignés sont mis à jour.
+    if hunter.strip():
+        cles.hunter_key = chiffrer(hunter)
+    if apollo.strip():
+        cles.apollo_key = chiffrer(apollo)
+    if serpapi.strip():
+        cles.serpapi_key = chiffrer(serpapi)
     db.commit()
 
     return RedirectResponse("/parametres?sauvegarde=1", status_code=303)

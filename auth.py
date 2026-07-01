@@ -31,6 +31,14 @@ DUREE_SESSION = 7 * 24 * 3600  # 7 jours, en secondes
 NOM_COOKIE_SESSION = "session"
 NOM_COOKIE_CSRF = "csrf_token"
 
+# Cookies « secure » (transmis uniquement en HTTPS) : activés en production.
+# Vrai si COOKIE_SECURE=1 (ou true/yes/on) OU si l'app tourne sur Vercel (HTTPS).
+# En local (HTTP), faux par défaut — sinon le navigateur refuserait le cookie.
+COOKIE_SECURE = (
+    os.getenv("COOKIE_SECURE", "").strip().lower() in ("1", "true", "yes", "on")
+    or bool(os.getenv("VERCEL"))
+)
+
 _serializer = URLSafeTimedSerializer(SECRET_KEY, salt="session-utilisateur")
 
 # Clé Fernet déterministe dérivée de SECRET_KEY (32 octets -> base64 urlsafe).
@@ -80,7 +88,7 @@ def creer_session(response, utilisateur_id: int):
     jeton = _serializer.dumps(utilisateur_id)
     response.set_cookie(
         NOM_COOKIE_SESSION, jeton,
-        max_age=DUREE_SESSION, httponly=True, samesite="lax", secure=False,
+        max_age=DUREE_SESSION, httponly=True, samesite="lax", secure=COOKIE_SECURE,
     )
 
 

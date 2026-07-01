@@ -16,7 +16,9 @@ Deux choses cohabitent dans ce dossier :
 | **Moteur** (inchangé) | `recherche.py`, `export.py`, `config.py` | Recherche Hunter/Apollo/SerpAPI + génération Excel |
 
 - **Backend** : FastAPI · **Templates** : Jinja2 (HTML/CSS pur, sans framework)
-- **Base de données** : SQLite via SQLAlchemy (fichier `prospection.db`, créé automatiquement)
+- **Base de données** : SQLAlchemy — **PostgreSQL (Neon.tech)** si `DATABASE_URL`
+  est défini, sinon **repli automatique sur SQLite** (fichier `prospection.db`
+  en local, ou `/tmp` sur Vercel). Les tables sont créées automatiquement.
 - **Sécurité** : mots de passe hachés (bcrypt), sessions par cookie signé
   (itsdangerous, 7 jours), clés API chiffrées en base (Fernet), protection CSRF.
 
@@ -29,11 +31,15 @@ Deux choses cohabitent dans ce dossier :
 ## Étape 1 — Installer les dépendances
 
 ```bash
-cd ~/prospection-lise
+cd ~/Site_web_scraping
 python3 -m venv venv
 source venv/bin/activate        # Windows : venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+> **Raccourci macOS :** double-cliquez sur `demarrer.command` dans le Finder.
+> Il crée l'environnement, installe les dépendances, génère un `.env` avec une
+> `SECRET_KEY` aléatoire, puis lance le site et l'ouvre dans le navigateur.
 
 ## Étape 2 — Générer la clé secrète
 
@@ -83,16 +89,24 @@ Ouvre ensuite **<http://localhost:8000>**.
 
 ## Mise en ligne (plus tard)
 
-Le site tourne avec n'importe quel hébergeur Python. En production :
+Le site est prêt pour **Vercel** (`vercel.json` + `api/index.py`) avec une base
+**Neon.tech** (PostgreSQL). Il tourne aussi sur n'importe quel hébergeur Python :
 
 ```bash
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-- Définis `SECRET_KEY` comme variable d'environnement (ne committe jamais `.env`).
-- Sers le site en **HTTPS** et passe les cookies en `secure=True`
-  (dans `auth.py` et `templating.py`).
-- Options d'hébergement : Railway.app, Render.com, ou un VPS.
+Variables d'environnement à définir en production (jamais committer `.env`) :
+
+| Variable | Rôle |
+|---|---|
+| `SECRET_KEY` | Signe les sessions **et** chiffre les clés API. Obligatoire. |
+| `DATABASE_URL` | Connexion Neon/PostgreSQL. Absente → repli SQLite. |
+| `COOKIE_SECURE` | `true` pour n'envoyer les cookies qu'en HTTPS. Auto-activé sur Vercel. |
+
+- Sers le site en **HTTPS**. Les cookies passent en `secure` automatiquement
+  quand `COOKIE_SECURE=true` (ou sur Vercel) — plus rien à modifier dans le code.
+- Autres options d'hébergement : Railway.app, Render.com, ou un VPS.
 
 ---
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  Outil de prospection B2B — script de démarrage
+#  Outil de prospection B2B (site web FastAPI) — démarrage
 #  Double-cliquez sur ce fichier dans le Finder pour lancer.
 # ============================================================
 
@@ -8,7 +8,7 @@
 cd "$(dirname "$0")" || exit 1
 
 echo "==================================================="
-echo "   Outil de prospection B2B — demarrage"
+echo "   Outil de prospection B2B — demarrage du site"
 echo "==================================================="
 echo ""
 
@@ -38,17 +38,19 @@ if [ ! -f "venv/.installed" ] || [ requirements.txt -nt venv/.installed ]; then
   touch venv/.installed
 fi
 
-# 5. Creer le fichier .env a partir du modele s'il manque
+# 5. Creer le fichier .env avec une vraie SECRET_KEY s'il manque
 if [ ! -f ".env" ]; then
   echo ""
-  echo "!  Le fichier .env n'existe pas encore : je le cree a partir du modele."
-  echo "   Pense a l'ouvrir et a y coller tes cles API (voir README, etape 3)."
-  cp .env.example .env
+  echo "!  Le fichier .env n'existe pas encore : je le cree avec une cle secrete aleatoire."
+  SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+  echo "SECRET_KEY=$SECRET" > .env
+  echo "   (Sans DATABASE_URL, le site utilise une base SQLite locale. Voir .env.example.)"
 fi
 
-# 6. Lancer l'outil
+# 6. Lancer le site (ouvre le navigateur automatiquement apres 2 s)
 echo ""
-echo ">> Lancement... l'outil va s'ouvrir dans ton navigateur."
+echo ">> Lancement du site sur http://localhost:8000"
 echo "   Pour l'arreter : reviens dans cette fenetre et fais Ctrl+C."
 echo ""
-streamlit run app.py
+( sleep 2 && open "http://localhost:8000" ) >/dev/null 2>&1 &
+uvicorn main:app --host 127.0.0.1 --port 8000
