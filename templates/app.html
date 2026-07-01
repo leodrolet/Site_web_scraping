@@ -8,6 +8,33 @@
     <p class="muted">Recherchez un contact, ou traitez toute une liste d'un coup.</p>
   </div>
 
+  {% if quota %}
+    <div class="quota-bandeau{% if bloque_quota %} quota-bloque{% endif %}">
+      <div class="quota-tete">
+        <span class="quota-plan">
+          <svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+          Plan {{ quota.plan.nom }}
+        </span>
+        {% if quota.illimite %}
+          <span class="quota-compte">Recherches illimitées</span>
+        {% else %}
+          <span class="quota-compte"><strong>{{ quota.utilisees }}</strong> / {{ quota.limite }} recherches ce mois</span>
+        {% endif %}
+        <a class="quota-lien" href="/abonnement">Gérer&nbsp;→</a>
+      </div>
+      {% if not quota.illimite %}
+        <div class="quota-bar"><span style="width: {{ quota.pourcentage }}%"></span></div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if bloque_quota %}
+    <div class="alerte alerte-warn">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+      <span>Limite atteinte : votre plan {{ quota.plan.nom }} inclut {{ quota.limite }} recherches par mois. <a href="/abonnement">Passez à un plan supérieur</a> pour continuer, ou revenez le mois prochain.</span>
+    </div>
+  {% endif %}
+
   {% if not cles_configurees %}
     <div class="alerte alerte-warn">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
@@ -60,7 +87,7 @@
           </select>
         </div>
       </div>
-      <button class="btn" type="submit">
+      <button class="btn" type="submit"{% if bloque_quota %} disabled{% endif %}>
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         Rechercher
       </button>
@@ -75,7 +102,7 @@
       <p>Téléverse un fichier CSV avec les colonnes
         <code>entreprise, departement, region</code>.</p>
       <input type="file" name="fichier" accept=".csv" required>
-      <button class="btn" type="submit">
+      <button class="btn" type="submit"{% if bloque_quota %} disabled{% endif %}>
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
         Traiter toute la liste
       </button>

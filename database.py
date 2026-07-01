@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String,
-                        create_engine)
+                        create_engine, inspect, text)
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -48,6 +48,9 @@ class Utilisateur(Base):
     nom = Column(String, nullable=True)
     date_creation = Column(DateTime, default=datetime.utcnow)
     actif = Column(Boolean, default=True)
+    # Plan d'abonnement : "gratuit" | "pro" | "business" (voir plans.py).
+    plan = Column(String, nullable=False, default="gratuit",
+                  server_default="gratuit")
 
     cles = relationship("ClesAPI", back_populates="utilisateur",
                         uselist=False, cascade="all, delete-orphan")
@@ -84,12 +87,30 @@ class HistoriqueRecherche(Base):
     utilisateur = relationship("Utilisateur", back_populates="historique")
 
 
+def _assurer_colonne_plan():
+    """Ajoute la colonne `plan` aux bases déjà existantes (SQLite et Postgres).
+
+    `create_all` ne modifie pas une table déjà créée : on ajoute donc la colonne
+    à la main si elle manque. Idempotent : ne fait rien si la colonne existe.
+    """
+    try:
+        colonnes = [c["name"] for c in inspect(engine).get_columns("utilisateurs")]
+    except Exception:
+        return  # table pas encore créée : create_all s'en chargera avec la colonne
+    if "plan" not in colonnes:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE utilisateurs ADD COLUMN plan VARCHAR "
+                "DEFAULT 'gratuit'"))
+
+
 def init_db():
     """Crée les tables si besoin. Résilient : ne fait pas planter l'import."""
     try:
         Base.metadata.create_all(bind=engine)
+        _assurer_colonne_plan()
     except Exception as exc:  # pragma: no cover
-        print(f"[init_db] Impossible de créer les tables : {exc}")
+        print(f"[init_db] Impossible de créer/mettre à jour les tables : {exc}")
 
 
 def get_db():

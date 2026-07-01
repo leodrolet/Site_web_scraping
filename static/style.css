@@ -285,12 +285,61 @@ svg { display: inline-block; vertical-align: middle; }
 .plan ul li .ic { width: 17px; height: 17px; color: var(--ok); flex: none; }
 .plan .btn, .plan .btn-ghost { margin-top: auto; }
 .plan-grise { opacity: .72; }
+.plan-limite {
+  margin: -10px 0 18px; font-weight: 650; color: var(--brand-700);
+  font-size: .95rem;
+}
 .ruban {
   position: absolute; top: 20px; right: 20px;
   background: linear-gradient(180deg, var(--brand), var(--brand-600)); color: #fff;
   font-size: .72rem; font-weight: 700; letter-spacing: .03em;
   padding: 4px 12px; border-radius: var(--r-full); box-shadow: var(--sh-brand);
 }
+.ruban-actuel { background: linear-gradient(180deg, var(--ok), #0a6b3a); box-shadow: none; }
+.plan.plan-actuel { border-color: var(--ok-bd); }
+
+/* ---------- Bandeau de quota (page Outil) ---------- */
+.quota-bandeau {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 16px 20px; box-shadow: var(--sh-sm);
+  margin-bottom: 18px;
+}
+.quota-bandeau.quota-bloque { border-color: var(--warn-bd); background: var(--warn-bg); }
+.quota-tete {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.quota-plan {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-weight: 650; color: var(--navy-800);
+}
+.quota-plan .ic-sm { color: var(--brand); }
+.quota-compte { color: var(--ink-soft); font-size: .95rem; }
+.quota-compte strong { color: var(--navy-900); }
+.quota-lien { margin-left: auto; font-weight: 600; font-size: .9rem; white-space: nowrap; }
+.quota-bar {
+  margin-top: 12px; height: 8px; background: var(--brand-100);
+  border-radius: var(--r-full); overflow: hidden;
+}
+.quota-bar > span {
+  display: block; height: 100%; border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--brand), var(--brand-700));
+  transition: width .4s ease;
+}
+.quota-bloque .quota-bar > span { background: linear-gradient(90deg, #d99a12, var(--warn)); }
+
+/* ---------- Page « Mon abonnement » ---------- */
+.abo-actuel { margin-bottom: 34px; border-radius: var(--r-lg); }
+.abo-actuel-tete {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.abo-actuel-tete h2 { margin: 2px 0 0; font-size: 1.5rem; }
+.abo-actuel-tete .muted { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+.abo-prix { font-size: 1.5rem; font-weight: 700; color: var(--navy-900); letter-spacing: -0.02em; }
+.abo-prix .muted { font-size: .9rem; font-weight: 500; }
+.abo-usage { margin: 0 0 12px; color: var(--ink-soft); }
+.abo-usage strong { color: var(--navy-900); }
+.abo-titre { font-size: 1.25rem; margin: 0 0 18px; }
 
 /* ---------- Formulaires ---------- */
 .carte-form {

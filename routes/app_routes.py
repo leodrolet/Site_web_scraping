@@ -18,6 +18,7 @@ from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 import config
+import plans
 from auth import dechiffrer, exiger_connexion, valider_csrf
 from database import ClesAPI, HistoriqueRecherche, Utilisateur, get_db
 from export import COLONNES, generer_excel
@@ -76,6 +77,15 @@ def _journaliser(db, utilisateur, entreprise, departement, region, contacts):
         nb_contacts_trouves=_nb_trouves(contacts)))
 
 
+def _contexte_app(db, utilisateur, **extra):
+    """Contexte commun de la page /app : colonnes, listes, et état du quota."""
+    etat = plans.etat_quota(db, utilisateur)
+    contexte = dict(_BASE)
+    contexte.update(quota=etat, bloque_quota=etat["depasse"])
+    contexte.update(extra)
+    return contexte
+
+
 # ----------------------------------------------------------------------
 # Page de l'outil
 # ----------------------------------------------------------------------
@@ -85,8 +95,9 @@ def page_app(request: Request,
             db: Session = Depends(get_db)):
     hunter, apollo, serpapi = _cles_utilisateur(db, utilisateur)
     return rendre(request, "app.html", utilisateur=utilisateur,
-                  cles_configurees=any([hunter, apollo, serpapi]),
-                  departement="Les deux", region="Canada", **_BASE)
+                  **_contexte_app(db, utilisateur,
+                                  cles_configurees=any([hunter, apollo, serpapi]),
+                                  departement="Les deux", region="Canada"))
 
 
 # ----------------------------------------------------------------------
@@ -102,13 +113,20 @@ def recherche_simple(request: Request,
                     db: Session = Depends(get_db)):
     if not valider_csrf(request, csrf_token):
         return rendre(request, "app.html", utilisateur=utilisateur,
-                      cles_configurees=_activer_cles(db, utilisateur),
-                      erreur="Session expirée, merci de réessayer.", **_BASE)
+                      **_contexte_app(db, utilisateur,
+                                      cles_configurees=_activer_cles(db, utilisateur),
+                                      erreur="Session expirée, merci de réessayer."))
 
     if not _activer_cles(db, utilisateur):
         return rendre(request, "app.html", utilisateur=utilisateur,
-                      cles_configurees=False, departement=departement,
-                      region=region, **_BASE)
+                      **_contexte_app(db, utilisateur, cles_configurees=False,
+                                      departement=departement, region=region))
+
+    # Blocage quota : le plan de l'utilisateur est épuisé pour ce mois.
+    if plans.etat_quota(db, utilisateur)["depasse"]:
+        return rendre(request, "app.html", utilisateur=utilisateur,
+                      **_contexte_app(db, utilisateur, cles_configurees=True,
+                                      departement=departement, region=region))
 
     try:
         res = rechercher_entreprise(entreprise, departement, region)
@@ -121,11 +139,12 @@ def recherche_simple(request: Request,
         db.commit()
 
     return rendre(request, "app.html", utilisateur=utilisateur,
-                  cles_configurees=True, resultats=contacts,
-                  avertissements=avertissements, erreur=erreur,
-                  charge=_encoder(contacts) if contacts else "",
-                  entreprise=entreprise, departement=departement,
-                  region=region, **_BASE)
+                  **_contexte_app(db, utilisateur, cles_configurees=True,
+                                  resultats=contacts, avertissements=avertissements,
+                                  erreur=erreur,
+                                  charge=_encoder(contacts) if contacts else "",
+                                  entreprise=entreprise, departement=departement,
+                                  region=region))
 
 
 # ----------------------------------------------------------------------
@@ -139,12 +158,19 @@ def recherche_lot(request: Request,
                  db: Session = Depends(get_db)):
     if not valider_csrf(request, csrf_token):
         return rendre(request, "app.html", utilisateur=utilisateur,
-                      cles_configurees=_activer_cles(db, utilisateur),
-                      erreur="Session expirée, merci de réessayer.", **_BASE)
+                      **_contexte_app(db, utilisateur,
+                                      cles_configurees=_activer_cles(db, utilisateur),
+                                      erreur="Session expirée, merci de réessayer."))
 
     if not _activer_cles(db, utilisateur):
         return rendre(request, "app.html", utilisateur=utilisateur,
-                      cles_configurees=False, **_BASE)
+                      **_contexte_app(db, utilisateur, cles_configurees=False))
+
+    # Blocage quota : plan épuisé pour ce mois -> on ne traite rien.
+    etat = plans.etat_quota(db, utilisateur)
+    if etat["depasse"]:
+        return rendre(request, "app.html", utilisateur=utilisateur,
+                      **_contexte_app(db, utilisateur, cles_configurees=True))
 
     contenu = fichier.file.read().decode("utf-8-sig", errors="replace")
     lecteur = csv.DictReader(io.StringIO(contenu))
@@ -154,12 +180,20 @@ def recherche_lot(request: Request,
     requises = {"entreprise", "departement", "region"}
     if not lignes or not requises.issubset(set(lignes[0].keys())):
         return rendre(request, "app.html", utilisateur=utilisateur,
-                      cles_configurees=True,
-                      erreur="Le CSV doit contenir les colonnes : "
-                             "entreprise, departement, region.", **_BASE)
+                      **_contexte_app(db, utilisateur, cles_configurees=True,
+                                      erreur="Le CSV doit contenir les colonnes : "
+                                             "entreprise, departement, region."))
 
+    # Budget de recherches restant ce mois (None = illimité).
+    budget = etat["restantes"]
     tous, avertissements, erreur = [], [], None
     for ligne in lignes:
+        if budget is not None and budget <= 0:
+            avertissements.append(
+                "Limite mensuelle atteinte : les entreprises restantes du "
+                "fichier n'ont pas été traitées. Passez à un plan supérieur "
+                "pour en faire plus.")
+            break
         ent = ligne.get("entreprise", "")
         if not ent:
             continue
@@ -173,12 +207,15 @@ def recherche_lot(request: Request,
         tous.extend(res["contacts"])
         avertissements.extend(res["avertissements"])
         _journaliser(db, utilisateur, ent, dep, reg, res["contacts"])
+        if budget is not None:
+            budget -= 1
     db.commit()
 
     return rendre(request, "app.html", utilisateur=utilisateur,
-                  cles_configurees=True, resultats=tous,
-                  avertissements=avertissements, erreur=erreur,
-                  charge=_encoder(tous) if tous else "", **_BASE)
+                  **_contexte_app(db, utilisateur, cles_configurees=True,
+                                  resultats=tous, avertissements=avertissements,
+                                  erreur=erreur,
+                                  charge=_encoder(tous) if tous else ""))
 
 
 # ----------------------------------------------------------------------

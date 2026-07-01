@@ -4,23 +4,18 @@
 > Basé uniquement sur les fichiers réellement présents dans le dépôt.
 > Quand une fonctionnalité attendue n'est pas codée, c'est indiqué clairement.
 
-> ✅ **Mise à jour du 1er juillet 2026 — incohérences mineures corrigées.**
-> Les points 2 à 6 signalés plus bas ont été réglés dans le code :
-> `demarrer.command` lance désormais le site FastAPI (plus Streamlit) ;
-> `.env.example` documente `DATABASE_URL` et `COOKIE_SECURE` ; le README est
-> à jour (Neon/Postgres, bon dossier) ; les cookies passent en `secure` en
-> production via `COOKIE_SECURE`/Vercel ; la page `/parametres` n'envoie plus
-> la clé déchiffrée au navigateur (un champ vide conserve la clé existante).
-> Le gros manque (plans, quotas, panneau admin) reste **non traité** — c'est un
-> développement à part, voir sections 3, 5 et 11.
+> ✅ **Mise à jour du 1er juillet 2026 — incohérences corrigées + plans ajoutés.**
+> - Points de cohérence réglés : `demarrer.command` lance le site FastAPI (plus Streamlit) ; `.env.example` documente `DATABASE_URL` et `COOKIE_SECURE` ; README à jour (Neon/Postgres, bon dossier) ; cookies `secure` en production ; `/parametres` n'expose plus la clé déchiffrée.
+> - **Nouveau : les 3 plans d'abonnement sont maintenant codés et fonctionnels** (Gratuit / Pro / Business), avec décompte mensuel des recherches et blocage au quota. Détails en sections 3, 4 et 11.
+> - **Toujours absent :** le panneau admin et le paiement en ligne (voir sections 5 et 11).
 
-> ⚠️ **À lire en premier — écarts majeurs entre l'attente et le code**
-> Plusieurs éléments demandés dans le cahier des charges **n'existent pas** dans le code actuel :
-> - **Il n'y a pas 3 plans d'abonnement.** La page d'accueil affiche 2 offres en texte marketing (« Starter » gratuit et « Pro » à venir). Aucun prix, aucune limite de recherche, aucun paiement ne sont codés.
-> - **Il n'y a aucun panneau admin.** Pas de page admin, pas de route admin, pas de rôle « administrateur ».
-> - **Il n'y a aucune limite de recherche ni blocage de quota** côté application. Les seules limites viennent des API externes (Hunter/Apollo/SerpAPI).
+> ⚠️ **À lire en premier — état des écarts par rapport au cahier des charges**
+> - ✅ **3 plans d'abonnement : CODÉS.** Gratuit 0 $ (25 rech./mois), Pro 29 $ (500), Business 79 $ (illimité). Prix en CAD, définis dans `plans.py`.
+> - ✅ **Limite de recherche + blocage de quota : CODÉS.** Décompte mensuel réel, blocage à la limite, bandeau d'usage.
+> - ❌ **Panneau admin : toujours absent.** Le plan d'un utilisateur se change en base de données (pas d'écran admin).
+> - ❌ **Paiement en ligne : absent (choix assumé).** Le passage à un plan payant se fait manuellement pour l'instant.
 >
-> Le détail de chaque écart est dans les sections 3, 5, 10 et 11.
+> Le détail de chaque point est dans les sections 3, 5, 10 et 11.
 
 ---
 
@@ -103,31 +98,41 @@
 | `templates/inscription.html` | Formulaire de création de compte. |
 | `templates/app.html` | Page de l'outil (recherche simple, recherche en lot, tableau de résultats). |
 | `templates/parametres.html` | Saisie/affichage des clés API. |
+| `templates/abonnement.html` | Page « Mon abonnement » : plan actuel, usage du mois, choix de plan. |
 | `templates/confidentialite.html` | Politique de confidentialité. |
+| `plans.py` | Définition des 3 plans (prix, limites) + calcul de l'usage mensuel et de l'état du quota. |
+| `routes/plan_routes.py` | Route `/abonnement`. |
 | `static/style.css` | Feuille de style globale. |
 | `static/app.js` | Interactions : onglets, barre de progression, afficher/masquer les clés. |
 | `requirements.txt` | Dépendances Python. |
-| `.env.example` | Modèle de variables d'environnement (contient seulement `SECRET_KEY`). |
+| `.env.example` | Modèle de variables d'environnement (`SECRET_KEY`, `DATABASE_URL`, `COOKIE_SECURE`). |
 | `exemple_entree.csv` | Exemple de fichier CSV pour la recherche en lot. |
-| `demarrer.command` | Script macOS de lancement (⚠️ lance l'ancienne app Streamlit — voir sections 10). |
+| `demarrer.command` | Script macOS de lancement du site FastAPI (uvicorn). |
 | `README.md` | Documentation d'installation et d'utilisation. |
 
 > **Note sur `app.py` (Streamlit) :** c'est l'ancienne version de l'outil, remplacée par le site web FastAPI. `requirements.txt` ne contient **plus** Streamlit ni pandas, donc `app.py` ne fonctionnerait pas sans réinstaller ces paquets manuellement.
 
 ---
 
-## 3. Les plans d'abonnement
+## 3. Les trois plans d'abonnement
 
-**⚠️ Réalité du code : il n'y a pas trois plans, et aucun plan n'est fonctionnel.**
+**✅ Les 3 plans sont maintenant définis et appliqués par le code** (`plans.py`), avec un vrai décompte des recherches et un blocage au quota. Prix en **CAD, par mois**.
 
-Ce qui existe est uniquement du **texte marketing** sur la page d'accueil (`templates/accueil.html`). Il n'y a **aucune** notion de plan dans la base de données, **aucun** prix codé, **aucune** limite de recherche, **aucun** paiement.
-
-| Plan affiché | Prix dans le code | Recherches incluses | Fonctionnalités | Blocage à la limite |
+| Plan | Prix / mois | Recherches incluses | Fonctionnalités | Blocage à la limite |
 |---|---|---|---|---|
-| **Starter** | « 0 $ / pour commencer » | Non défini (aucune limite codée) | « Utilisez vos propres clés API gratuites », « Recherche simple et en lot », « Export Excel inclus » | Aucun (rien n'est codé) |
-| **Pro** | « À venir » (aucun prix) | Non défini | « Clés API incluses », « Support prioritaire » | Bouton désactivé, marqué « Bientôt disponible » |
+| **Gratuit** | 0 $ | **25 / mois** | Recherche simple, export Excel, vos propres clés API | Recherche bloquée dès 25/25 ce mois-ci |
+| **Pro** | 29 $ | **500 / mois** | Recherche simple **et en lot (CSV)**, export Excel, vos propres clés API | Recherche bloquée dès 500/500 ce mois-ci |
+| **Business** | 79 $ | **Illimité** | Tout Pro + support prioritaire | Jamais bloqué |
 
-**Conclusion :** le modèle à 3 paliers avec un nombre de recherches et un blocage à la limite **n'est pas implémenté**. Il faudrait le concevoir et le coder (champ `plan` sur l'utilisateur, compteur de recherches, logique de blocage, paiement). Voir sections 10 et 11.
+**Règles de décompte (codées dans `plans.py`) :**
+- **1 entreprise recherchée = 1 recherche décomptée.** En recherche en lot, chaque ligne du CSV compte pour 1.
+- Le compteur se base sur la table `historique_recherches` et se **remet à zéro chaque mois calendaire** (1er du mois, en UTC).
+- Quand la limite est atteinte : les boutons de recherche sont désactivés, un message invite à passer à un plan supérieur, et le serveur refuse aussi la recherche côté back-end (pas seulement dans l'interface).
+- En lot, si la limite est atteinte **en cours de fichier**, le traitement s'arrête proprement et garde les résultats déjà obtenus.
+
+**Ce qui n'est PAS codé :** le **paiement en ligne**. Le changement de plan se fait aujourd'hui en base de données (voir README, « Changer le plan d'un utilisateur »), et la page d'abonnement invite à écrire à l'équipe. Voir section 11.
+
+> ⚠️ **Prix facilement modifiables :** noms, prix et limites sont regroupés dans le dictionnaire `PLANS` de `plans.py`. Les changer là met à jour automatiquement l'accueil, la page d'abonnement et les blocages.
 
 ---
 
@@ -147,23 +152,24 @@ Ce qui existe est uniquement du **texte marketing** sur la page d'accueil (`temp
 
 ### Recherche simple (`/app/recherche`)
 1. Sur `/app`, l'utilisateur saisit le nom de l'entreprise, choisit le département (Marketing / Ventes / Les deux) et la région (Canada / États-Unis / Europe / Toutes).
-2. Le serveur vérifie le CSRF, puis vérifie qu'au moins une clé API est configurée. Sinon, il affiche un avertissement invitant à aller dans `/parametres`.
+2. Le serveur vérifie le CSRF, puis qu'au moins une clé API est configurée (sinon avertissement), **puis que le quota mensuel n'est pas atteint**.
 3. Le moteur `rechercher_entreprise()` interroge les API (Hunter → Apollo → SerpAPI).
-4. Les résultats s'affichent dans un tableau. Une trace est enregistrée dans `historique_recherches`.
+4. Les résultats s'affichent dans un tableau. Une trace est enregistrée dans `historique_recherches` (= le décompte du quota).
 
 ### Recherche en lot / CSV (`/app/lot`)
 1. L'utilisateur téléverse un fichier CSV avec les colonnes **`entreprise, departement, region`** (un exemple est fourni : `exemple_entree.csv`).
 2. Le serveur lit le CSV, vérifie que les colonnes requises sont présentes.
-3. Pour chaque ligne, il lance une recherche. Si une erreur bloquante survient (clé invalide ou quota dépassé), le traitement s'arrête mais **les résultats déjà obtenus sont conservés**.
-4. Tous les résultats sont regroupés dans un seul tableau ; chaque entreprise traitée est journalisée.
+3. Pour chaque ligne, il lance une recherche — **dans la limite des recherches restantes du mois**. Si le quota du plan est atteint en cours de fichier, le traitement s'arrête et les lignes non traitées sont signalées. Une erreur d'API bloquante (clé invalide/quota API) arrête aussi le traitement. Dans tous les cas, **les résultats déjà obtenus sont conservés**.
+4. Tous les résultats sont regroupés dans un seul tableau ; chaque entreprise traitée est journalisée (et décomptée).
 
 ### Télécharger l'Excel (`/app/telecharger`)
 - Les résultats affichés sont stockés dans un champ caché (encodés en base64). Le bouton « Télécharger Excel » renvoie ce contenu au serveur, qui génère le `.xlsx` avec `openpyxl`.
 - Astuce d'implémentation : le téléchargement **ne relance pas** de recherche, donc il ne reconsomme pas de quota API. Le fichier est nommé `prospection_AAAA-MM-JJ_HHMM.xlsx`.
 
 ### Quand la limite est atteinte
-- **Côté application : rien n'est prévu**, car il n'y a pas de limite interne.
-- **Côté API externe :** si Hunter/Apollo/SerpAPI renvoient une erreur de quota (HTTP 429) ou de clé invalide (401/403), le moteur lève une erreur bloquante et l'interface affiche un message (ex. « Hunter.io : quota mensuel dépassé. »). En recherche en lot, le traitement s'arrête à ce moment et garde ce qui a déjà été trouvé.
+- **Limite du plan (nouveau) :** dès que l'utilisateur atteint le nombre de recherches de son plan pour le mois (25 en Gratuit, 500 en Pro), la page `/app` affiche un bandeau ambre « X/limite », désactive les boutons de recherche et montre un message invitant à passer à un plan supérieur. Le serveur refuse aussi la recherche (sécurité côté back-end). Le compteur repart à zéro le 1er du mois suivant. Le plan Business (illimité) n'est jamais bloqué.
+- **Limite d'API externe :** si Hunter/Apollo/SerpAPI renvoient une erreur de quota (HTTP 429) ou de clé invalide (401/403), le moteur lève une erreur bloquante et l'interface affiche un message (ex. « Hunter.io : quota mensuel dépassé. »). En lot, le traitement s'arrête et garde ce qui a déjà été trouvé.
+- **Page « Mon abonnement » (`/abonnement`) :** montre à tout moment le plan actuel, le nombre de recherches utilisées/restantes du mois, et les 3 plans.
 
 ---
 
@@ -193,6 +199,9 @@ Trois tables sont définies avec SQLAlchemy.
 | `nom` | texte | Optionnel. |
 | `date_creation` | date/heure | Par défaut : maintenant (UTC). |
 | `actif` | booléen | Par défaut `True` ; `False` = compte désactivé. |
+| `plan` | texte | `gratuit` (défaut), `pro` ou `business`. Détermine la limite mensuelle. |
+
+> **Migration automatique :** au démarrage, `init_db()` ajoute la colonne `plan` (valeur `gratuit`) aux bases déjà existantes qui ne l'ont pas encore — sans perte de données, aussi bien en SQLite qu'en PostgreSQL.
 
 ### Table `cles_api`
 | Colonne | Type | Détail |
@@ -215,7 +224,7 @@ Trois tables sont définies avec SQLAlchemy.
 | `nb_contacts_trouves` | entier | Nombre de contacts « exploitables ». |
 | `date` | date/heure | Date de la recherche. |
 
-**Ce qui est enregistré à chaque recherche :** une ligne dans `historique_recherches` avec l'entreprise, le département, la région, le nombre de contacts trouvés (comptés comme ayant un prénom **ou** un courriel) et la date. **Les contacts eux-mêmes (noms, courriels) ne sont pas stockés** — seulement le décompte.
+**Ce qui est enregistré à chaque recherche :** une ligne dans `historique_recherches` avec l'entreprise, le département, la région, le nombre de contacts trouvés (comptés comme ayant un prénom **ou** un courriel) et la date. **Les contacts eux-mêmes (noms, courriels) ne sont pas stockés** — seulement le décompte. Cette table sert aussi de **compteur pour le quota mensuel** : le nombre de lignes du mois en cours est comparé à la limite du plan (`plans.py`).
 
 ---
 

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Mon abonnement{% endblock %}
+
+{% block content %}
+<section class="app-wrap">
+  <div class="app-tete">
+    <h1>Mon abonnement</h1>
+    <p class="muted">Votre plan et votre usage du mois en cours.</p>
+  </div>
+
+  <div class="carte abo-actuel">
+    <div class="abo-actuel-tete">
+      <div>
+        <span class="muted">Plan actuel</span>
+        <h2>{{ quota.plan.nom }}</h2>
+      </div>
+      <div class="abo-prix">
+        {% if quota.plan.prix == 0 %}Gratuit{% else %}{{ quota.plan.prix }} $ <span class="muted">/ mois</span>{% endif %}
+      </div>
+    </div>
+    {% if quota.illimite %}
+      <p class="abo-usage">Recherches <strong>illimitées</strong> ce mois-ci.</p>
+    {% else %}
+      <p class="abo-usage"><strong>{{ quota.utilisees }}</strong> / {{ quota.limite }} recherches utilisées ce mois — {{ quota.restantes }} restante(s).</p>
+      <div class="quota-bar"><span style="width: {{ quota.pourcentage }}%"></span></div>
+    {% endif %}
+  </div>
+
+  <h2 class="abo-titre">Changer de plan</h2>
+  <div class="grille-3 tarifs">
+    {% for p in plans %}
+      <div class="carte plan{% if p.populaire %} mise-avant{% endif %}{% if p.cle == plan_actuel %} plan-actuel{% endif %}">
+        {% if p.cle == plan_actuel %}
+          <span class="ruban ruban-actuel">Votre plan</span>
+        {% elif p.populaire %}
+          <span class="ruban">Populaire</span>
+        {% endif %}
+        <h3>{{ p.nom }}</h3>
+        <p class="plan-prix">
+          {% if p.prix == 0 %}<b>Gratuit</b>{% else %}<b>{{ p.prix }} $</b> <span>/ mois</span>{% endif %}
+        </p>
+        <p class="plan-limite">
+          {% if p.limite %}{{ p.limite }} recherches / mois{% else %}Recherches illimitées{% endif %}
+        </p>
+        <ul>
+          {% for f in p.fonctions %}
+            <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> {{ f }}</li>
+          {% endfor %}
+        </ul>
+        {% if p.cle == plan_actuel %}
+          <button class="btn-ghost" disabled>Plan actuel</button>
+        {% else %}
+          <a class="btn{% if not p.populaire %} btn-ghost{% endif %}"
+             href="mailto:contact@prospectb2b.app?subject=Passer%20au%20plan%20{{ p.nom }}">
+            Passer à {{ p.nom }}
+          </a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="alerte alerte-info" style="margin-top:24px;">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <span>Le paiement en ligne n'est pas encore actif. Pour changer de plan, écrivez-nous à
+      <a href="mailto:contact@prospectb2b.app">contact@prospectb2b.app</a> — nous l'activons manuellement.</span>
+  </div>
+</section>
+{% endblock %}

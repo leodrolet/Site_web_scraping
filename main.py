@@ -19,7 +19,8 @@ _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from auth import RedirectionConnexion  # noqa: E402
 from database import init_db  # noqa: E402
-from routes import app_routes, auth_routes, public, settings_routes  # noqa: E402
+from routes import (app_routes, auth_routes, plan_routes, public,  # noqa: E402
+                    settings_routes)
 
 app = FastAPI(title="Outil de prospection B2B")
 
@@ -40,3 +41,4 @@ app.include_router(public.router)
 app.include_router(auth_routes.router)
 app.include_router(app_routes.router)
 app.include_router(settings_routes.router)
+app.include_router(plan_routes.router)

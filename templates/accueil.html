@@ -81,30 +81,33 @@
   </ul>
 </section>
 
-<section class="bloc">
+<section class="bloc" id="tarifs">
   <h2 class="titre-section">Tarifs</h2>
-  <p class="section-sous">Commencez gratuitement avec vos propres clés API.</p>
-  <div class="grille-2 tarifs">
-    <div class="carte plan mise-avant">
-      <h3>Starter</h3>
-      <p class="plan-prix"><b>0 $</b> <span>/ pour commencer</span></p>
-      <ul>
-        <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Utilisez vos propres clés API gratuites</li>
-        <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Recherche simple et en lot</li>
-        <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Export Excel inclus</li>
-      </ul>
-      <a class="btn" href="/inscription">Créer un compte gratuit</a>
-    </div>
-    <div class="carte plan plan-grise">
-      <span class="ruban">Bientôt</span>
-      <h3>Pro</h3>
-      <p class="plan-prix"><b>À venir</b></p>
-      <ul>
-        <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Clés API incluses</li>
-        <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Support prioritaire</li>
-      </ul>
-      <button class="btn-ghost" disabled>Bientôt disponible</button>
-    </div>
+  <p class="section-sous">Commencez gratuitement, avec vos propres clés API. Prix en CAD, par mois.</p>
+  <div class="grille-3 tarifs">
+    {% for p in plans %}
+      <div class="carte plan{% if p.populaire %} mise-avant{% endif %}">
+        {% if p.populaire %}<span class="ruban">Populaire</span>{% endif %}
+        <h3>{{ p.nom }}</h3>
+        <p class="plan-prix">
+          {% if p.prix == 0 %}<b>Gratuit</b>{% else %}<b>{{ p.prix }} $</b> <span>/ mois</span>{% endif %}
+        </p>
+        <p class="plan-limite">
+          {% if p.limite %}{{ p.limite }} recherches / mois{% else %}Recherches illimitées{% endif %}
+        </p>
+        <ul>
+          {% for f in p.fonctions %}
+            <li><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> {{ f }}</li>
+          {% endfor %}
+        </ul>
+        <a class="btn{% if not p.populaire %} btn-ghost{% endif %}" href="/inscription">
+          {% if p.prix == 0 %}Créer un compte gratuit{% else %}Choisir {{ p.nom }}{% endif %}
+        </a>
+      </div>
+    {% endfor %}
   </div>
+  <p class="centre muted" style="margin-top:22px; font-size:.9rem;">
+    Le paiement en ligne arrive bientôt. En attendant, écrivez-nous pour passer à un plan supérieur.
+  </p>
 </section>
 {% endblock %}
