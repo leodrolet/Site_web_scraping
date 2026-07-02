@@ -226,6 +226,32 @@
   activerResultats(document.querySelector("#zone-resultats .resultats"));
 
   // ----------------------------------------------------------------
+  // Admin : filtre de la liste des comptes
+  // ----------------------------------------------------------------
+  var filtreComptes = document.getElementById("filtre-comptes");
+  if (filtreComptes) {
+    var corpsComptes = document.querySelector(".table-admin tbody");
+    filtreComptes.addEventListener("input", function () {
+      var q = filtreComptes.value.trim().toLowerCase();
+      if (!corpsComptes) { return; }
+      Array.prototype.forEach.call(corpsComptes.rows, function (tr) {
+        tr.style.display = (!q || tr.textContent.toLowerCase().indexOf(q) !== -1)
+          ? "" : "none";
+      });
+    });
+  }
+
+  // ----------------------------------------------------------------
+  // Confirmation avant actions sensibles (admin, suppression…)
+  // ----------------------------------------------------------------
+  document.querySelectorAll("form.form-confirmer").forEach(function (form) {
+    form.addEventListener("submit", function (e) {
+      var msg = form.dataset.confirm || "Confirmer cette action ?";
+      if (!window.confirm(msg)) { e.preventDefault(); }
+    });
+  });
+
+  // ----------------------------------------------------------------
   // Recherche en lot : flux de progression ligne par ligne
   // ----------------------------------------------------------------
   function echapper(t) {

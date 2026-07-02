@@ -43,7 +43,15 @@
   </div>
 
   <!-- Liste des utilisateurs -->
-  <div class="carte" style="padding:0; overflow-x:auto;">
+  <div class="carte" style="padding:0;">
+    <div class="comptes-tete">
+      <h2 class="detail-titre" style="margin:0;">Comptes ({{ stats.total }})</h2>
+      <div class="input-wrap comptes-recherche">
+        <svg class="input-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" id="filtre-comptes" placeholder="Filtrer par courriel ou nom…" aria-label="Filtrer les comptes">
+      </div>
+    </div>
+    <div class="tableau-scroll">
     <table class="table-admin" style="width:100%;border-collapse:collapse;">
       <thead>
         <tr>
@@ -59,7 +67,7 @@
         {% for l in utilisateurs %}
           <tr>
             <td>
-              {{ l.u.email }}
+              <a href="/admin/utilisateur/{{ l.u.id }}" class="lien-compte">{{ l.u.email }}</a>
               {% if l.u.admin %}<span class="badge-admin">admin</span>{% endif %}
             </td>
             <td>{{ l.u.nom or '—' }}</td>
@@ -85,21 +93,23 @@
               {% endif %}
             </td>
             <td>
-              {% if l.u.id == moi %}
-                <span class="muted">— vous —</span>
-              {% else %}
-                <form method="post" action="/admin/utilisateur/{{ l.u.id }}/actif">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button class="{% if l.u.actif %}btn-ghost{% else %}btn{% endif %}" type="submit">
-                    {% if l.u.actif %}Désactiver{% else %}Activer{% endif %}
-                  </button>
-                </form>
-              {% endif %}
+              <div class="actions-compte">
+                <a class="btn-ghost" href="/admin/utilisateur/{{ l.u.id }}">Gérer</a>
+                {% if l.u.id != moi %}
+                  <form method="post" action="/admin/utilisateur/{{ l.u.id }}/actif">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button class="{% if l.u.actif %}btn-ghost{% else %}btn{% endif %}" type="submit">
+                      {% if l.u.actif %}Désactiver{% else %}Activer{% endif %}
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
             </td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
 </section>
 {% endblock %}

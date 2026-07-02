@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Compte · {{ cible.email }}{% endblock %}
+
+{% block content %}
+<section class="app-wrap" style="max-width:1000px;">
+  <a class="lien-retour" href="/admin">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    Retour aux comptes
+  </a>
+
+  <div class="app-tete detail-tete">
+    <div>
+      <h1>{{ cible.email }}</h1>
+      <p class="muted">
+        {{ cible.nom or 'Sans nom' }} · inscrit le {{ cible.date_creation.strftime('%Y-%m-%d') }}
+      </p>
+    </div>
+    <div class="detail-badges">
+      {% if cible.admin %}<span class="badge-admin">admin</span>{% endif %}
+      {% if cible.actif %}<span class="badge-etat ok">Actif</span>{% else %}<span class="badge-etat ko">Désactivé</span>{% endif %}
+      {% if cible.id == moi %}<span class="badge-etat vous">C'est vous</span>{% endif %}
+    </div>
+  </div>
+
+  {% if succes %}
+    <div class="alerte alerte-info">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+      <span>{{ succes }}</span>
+    </div>
+  {% endif %}
+  {% if erreur %}
+    <div class="alerte alerte-error">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+      <span>{{ erreur }}</span>
+    </div>
+  {% endif %}
+  {% if mot_de_passe_temporaire %}
+    <div class="alerte alerte-warn">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>Nouveau mot de passe temporaire (affiché une seule fois) :
+        <code class="code-mdp">{{ mot_de_passe_temporaire }}</code>
+        — communiquez-le à l'utilisateur, il pourra ensuite le changer.</span>
+    </div>
+  {% endif %}
+
+  <div class="detail-grille">
+    <!-- Informations éditables -->
+    <div class="carte">
+      <h2 class="detail-titre">Informations</h2>
+      <form method="post" action="/admin/utilisateur/{{ cible.id }}/profil">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="champ">
+          <label for="nom">Nom</label>
+          <input type="text" id="nom" name="nom" value="{{ cible.nom or '' }}" placeholder="Sans nom">
+        </div>
+        <div class="champ">
+          <label for="email">Courriel</label>
+          <input type="email" id="email" name="email" value="{{ cible.email }}" required>
+        </div>
+        <button class="btn" type="submit">Enregistrer</button>
+      </form>
+    </div>
+
+    <!-- Usage du mois -->
+    <div class="carte">
+      <h2 class="detail-titre">Usage ce mois-ci</h2>
+      <p class="detail-ligne"><span>Plan</span><b>{{ plan_infos.nom }}</b></p>
+      {% if usage.illimite %}
+        <p class="detail-ligne"><span>Recherches</span><b>{{ usage.utilisees }} · illimité</b></p>
+      {% else %}
+        <p class="detail-ligne"><span>Recherches</span><b>{{ usage.utilisees }} / {{ usage.limite }}</b></p>
+        <div class="quota-bar{% if usage.depasse %} pleine{% endif %}"><span style="width: {{ usage.pourcentage }}%"></span></div>
+      {% endif %}
+      <p class="detail-ligne"><span>Total (historique)</span><b>{{ recherches_total }}</b></p>
+    </div>
+
+    <!-- Plan & accès -->
+    <div class="carte">
+      <h2 class="detail-titre">Plan &amp; accès</h2>
+      <form method="post" action="/admin/utilisateur/{{ cible.id }}/plan" class="detail-action">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="retour" value="detail">
+        <label for="plan">Plan d'abonnement</label>
+        <div class="detail-action-ligne">
+          <select id="plan" name="plan">
+            {% for p in plans %}
+              <option value="{{ p.cle }}" {% if p.cle == plan_infos.cle %}selected{% endif %}>{{ p.nom }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn" type="submit">Appliquer</button>
+        </div>
+      </form>
+
+      <div class="detail-boutons">
+        {% if cible.id == moi %}
+          <span class="muted detail-note">Vous ne pouvez pas modifier votre propre statut.</span>
+        {% else %}
+          <form method="post" action="/admin/utilisateur/{{ cible.id }}/actif">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="retour" value="detail">
+            <button class="{% if cible.actif %}btn-ghost{% else %}btn{% endif %}" type="submit">
+              {% if cible.actif %}Désactiver le compte{% else %}Réactiver le compte{% endif %}
+            </button>
+          </form>
+          <form method="post" action="/admin/utilisateur/{{ cible.id }}/admin"
+                class="form-confirmer"
+                data-confirm="{% if cible.admin %}Retirer les droits admin de ce compte ?{% else %}Donner les droits admin (accès total) à ce compte ?{% endif %}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="retour" value="detail">
+            <button class="btn-ghost" type="submit">
+              {% if cible.admin %}Retirer l'accès admin{% else %}Promouvoir admin{% endif %}
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sécurité -->
+    <div class="carte">
+      <h2 class="detail-titre">Sécurité</h2>
+      <p class="muted">Génère un mot de passe temporaire à transmettre à l'utilisateur. L'ancien mot de passe devient invalide.</p>
+      <form method="post" action="/admin/utilisateur/{{ cible.id }}/motdepasse"
+            class="form-confirmer" data-confirm="Réinitialiser le mot de passe de {{ cible.email }} ?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn-ghost" type="submit">Réinitialiser le mot de passe</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Zone de danger -->
+  <div class="carte carte-danger">
+    <h2 class="detail-titre">Zone de danger</h2>
+    {% if cible.id == moi %}
+      <p class="muted">Vous ne pouvez pas supprimer votre propre compte.</p>
+    {% else %}
+      <p class="muted">La suppression est définitive : le compte et tout son historique de recherches sont effacés.</p>
+      <form method="post" action="/admin/utilisateur/{{ cible.id }}/supprimer"
+            class="form-confirmer" data-confirm="Supprimer définitivement {{ cible.email }} et tout son historique ? Cette action est irréversible.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn-danger" type="submit">Supprimer ce compte</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- Historique des recherches -->
+  <div class="carte historique" style="margin-top:24px;">
+    <div class="hist-tete">
+      <h2>Historique des recherches</h2>
+      <span class="muted">15 dernières · {{ recherches_total }} au total</span>
+    </div>
+    {% if historique %}
+      <div class="tableau-scroll">
+        <table class="table-hist">
+          <thead>
+            <tr><th>Entreprise</th><th>Département</th><th>Région</th><th>Date</th><th>Contacts</th></tr>
+          </thead>
+          <tbody>
+            {% for h in historique %}
+              <tr>
+                <td>{{ h.entreprise }}</td>
+                <td>{{ h.departement }}</td>
+                <td>{{ h.region }}</td>
+                <td class="hist-date">{{ h.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td><span class="pastille-mini">{{ h.nb_contacts_trouves }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted" style="padding:1.1rem 1.3rem;">Aucune recherche pour l'instant.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
