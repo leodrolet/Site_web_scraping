@@ -54,6 +54,20 @@ PAYS_PAR_REGION = {
 }
 
 
+# Pagination des fournisseurs. Plafond de sécurité : sans lui, une seule
+# entreprise très fournie pourrait vider le pool de crédits du mois.
+#   Hunter : 1 requête Domain Search = 1 crédit, renvoie jusqu'à `limit` (max
+#            100) courriels. Une page suffit donc presque toujours ; au-delà de
+#            100 contacts il faut paginer via `offset`, chaque page = 1 crédit.
+#   Apollo : People Search paginé via `page`/`per_page` (max 100). Les crédits
+#            e-mail se consomment au déverrouillage, pas à la recherche.
+# 5 pages × 100 = jusqu'à 500 contacts par entreprise, ce qui est déjà énorme.
+_HUNTER_LIMITE = 100
+_HUNTER_MAX_PAGES = 5
+_APOLLO_LIMITE = 100
+_APOLLO_MAX_PAGES = 5
+
+
 class ErreurAPI(Exception):
     """Erreur connue renvoyée par un service (clé invalide, quota épuisé...)."""
 
@@ -105,59 +119,87 @@ def _titre_pertinent(titre, departement):
 # Étapes A / B — Hunter.io
 # ----------------------------------------------------------------------
 def _hunter_domain_search(entreprise, departement, region):
-    """Domain Search Hunter : domaine + modèle de courriel + contacts filtrés."""
+    """Domain Search Hunter : tous les contacts filtrés (marketing/ventes).
+
+    Renvoie jusqu'à `_HUNTER_LIMITE` contacts par page, paginé via `offset`
+    jusqu'à `_HUNTER_MAX_PAGES` pages. On s'arrête dès qu'une page n'est pas
+    pleine (plus de résultats). Les erreurs bloquantes (401/429) sur la
+    PREMIÈRE page se comportent comme avant ; sur une page suivante, on garde
+    les contacts déjà obtenus au lieu de tout perdre.
+    """
     if not config.HUNTER_API_KEY:
         return [], ["Hunter.io : clé API absente — étape ignorée."]
 
     url = "https://api.hunter.io/v2/domain-search"
-    params = {
-        "company": entreprise,
-        "api_key": config.HUNTER_API_KEY,
-        "limit": 50,
-    }
-    try:
-        rep = requests.get(url, params=params, timeout=config.TIMEOUT)
-    except requests.exceptions.Timeout:
-        return [], ["Hunter.io : délai dépassé (10 s)."]
-    except requests.exceptions.RequestException as e:
-        return [], [f"Hunter.io : erreur réseau ({e})."]
-
-    if rep.status_code == 401:
-        raise ErreurAPI("Hunter.io : clé API invalide ou manquante.", "Hunter.io")
-    if rep.status_code == 429:
-        raise ErreurAPI("Hunter.io : quota mensuel dépassé.", "Hunter.io")
-    if rep.status_code != 200:
-        return [], [f"Hunter.io : réponse inattendue (code {rep.status_code})."]
-
-    data = (rep.json() or {}).get("data", {}) or {}
-    domaine = data.get("domain")
-    modele = data.get("pattern")          # ex : {first}.{last}
-    pays = data.get("country") or ""
-    etat = data.get("state") or ""
-    ville = data.get("city") or ""
-
     cibles_hunter = FILTRES_DEPARTEMENT[departement]["hunter"]
     contacts = []
-    for courriel in data.get("emails", []) or []:
-        dep = (courriel.get("department") or "").lower()
-        poste = courriel.get("position") or ""
-        if not (dep in cibles_hunter or _titre_pertinent(poste, departement)):
-            continue
-        confiance = courriel.get("confidence")
-        contacts.append({
-            "Entreprise": entreprise,
-            "Prénom": courriel.get("first_name") or "",
-            "Nom": courriel.get("last_name") or "",
-            "Titre": poste,
-            "Département": _departement_lisible(dep) or departement,
-            "Courriel": courriel.get("value") or "",
-            "Confiance (%)": confiance if confiance is not None else "",
-            "Ville": ville,
-            "Province/État": etat,
-            "Pays": pays,
-            "Source": f"Hunter.io ({domaine})" if domaine else "Hunter.io",
-            "Date de recherche": _aujourd_hui(),
-        })
+    domaine = modele = None
+    pays = etat = ville = ""
+
+    for page in range(_HUNTER_MAX_PAGES):
+        params = {
+            "company": entreprise,
+            "api_key": config.HUNTER_API_KEY,
+            "limit": _HUNTER_LIMITE,
+            "offset": page * _HUNTER_LIMITE,
+        }
+        try:
+            rep = requests.get(url, params=params, timeout=config.TIMEOUT)
+        except requests.exceptions.Timeout:
+            if page == 0:
+                return [], ["Hunter.io : délai dépassé (10 s)."]
+            break
+        except requests.exceptions.RequestException as e:
+            if page == 0:
+                return [], [f"Hunter.io : erreur réseau ({e})."]
+            break
+
+        if rep.status_code == 401:
+            if page == 0:
+                raise ErreurAPI("Hunter.io : clé API invalide ou manquante.", "Hunter.io")
+            break
+        if rep.status_code == 429:
+            if page == 0:
+                raise ErreurAPI("Hunter.io : quota mensuel dépassé.", "Hunter.io")
+            break
+        if rep.status_code != 200:
+            if page == 0:
+                return [], [f"Hunter.io : réponse inattendue (code {rep.status_code})."]
+            break
+
+        data = (rep.json() or {}).get("data", {}) or {}
+        if page == 0:
+            domaine = data.get("domain")
+            modele = data.get("pattern")          # ex : {first}.{last}
+            pays = data.get("country") or ""
+            etat = data.get("state") or ""
+            ville = data.get("city") or ""
+
+        emails = data.get("emails", []) or []
+        for courriel in emails:
+            dep = (courriel.get("department") or "").lower()
+            poste = courriel.get("position") or ""
+            if not (dep in cibles_hunter or _titre_pertinent(poste, departement)):
+                continue
+            confiance = courriel.get("confidence")
+            contacts.append({
+                "Entreprise": entreprise,
+                "Prénom": courriel.get("first_name") or "",
+                "Nom": courriel.get("last_name") or "",
+                "Titre": poste,
+                "Département": _departement_lisible(dep) or departement,
+                "Courriel": courriel.get("value") or "",
+                "Confiance (%)": confiance if confiance is not None else "",
+                "Ville": ville,
+                "Province/État": etat,
+                "Pays": pays,
+                "Source": f"Hunter.io ({domaine})" if domaine else "Hunter.io",
+                "Date de recherche": _aujourd_hui(),
+            })
+
+        # Page incomplète -> plus rien à paginer.
+        if len(emails) < _HUNTER_LIMITE:
+            break
 
     avertissements = []
     if domaine and not contacts:
@@ -174,6 +216,7 @@ def _hunter_domain_search(entreprise, departement, region):
 # Étape C — Apollo.io
 # ----------------------------------------------------------------------
 def _apollo_search(entreprise, departement, region):
+    """People Search Apollo : tous les contacts pertinents, paginé (max 5 pages)."""
     if not config.APOLLO_API_KEY:
         return [], ["Apollo.io : clé API absente — étape ignorée."]
 
@@ -183,51 +226,72 @@ def _apollo_search(entreprise, departement, region):
         "Cache-Control": "no-cache",
         "X-Api-Key": config.APOLLO_API_KEY,
     }
-    corps = {
-        "q_organization_name": entreprise,
-        "person_titles": FILTRES_DEPARTEMENT[departement]["titres"],
-        "page": 1,
-        "per_page": 25,
-    }
     pays = PAYS_PAR_REGION.get(region, [])
-    if pays:
-        corps["person_locations"] = pays
-
-    try:
-        rep = requests.post(url, headers=entetes, json=corps, timeout=config.TIMEOUT)
-    except requests.exceptions.Timeout:
-        return [], ["Apollo.io : délai dépassé (10 s)."]
-    except requests.exceptions.RequestException as e:
-        return [], [f"Apollo.io : erreur réseau ({e})."]
-
-    if rep.status_code in (401, 403):
-        raise ErreurAPI("Apollo.io : clé API invalide ou accès refusé.", "Apollo.io")
-    if rep.status_code == 429:
-        raise ErreurAPI("Apollo.io : quota d'appels dépassé.", "Apollo.io")
-    if rep.status_code != 200:
-        return [], [f"Apollo.io : réponse inattendue (code {rep.status_code})."]
-
-    personnes = (rep.json() or {}).get("people", []) or []
     contacts = []
-    for p in personnes:
-        org = p.get("organization") or {}
-        courriel = p.get("email") or ""
-        if courriel.startswith("email_not_unlocked"):
-            courriel = ""  # courriel verrouillé sur le plan gratuit Apollo
-        contacts.append({
-            "Entreprise": entreprise,
-            "Prénom": p.get("first_name") or "",
-            "Nom": p.get("last_name") or "",
-            "Titre": p.get("title") or "",
-            "Département": departement,
-            "Courriel": courriel,
-            "Confiance (%)": "",
-            "Ville": org.get("city") or p.get("city") or "",
-            "Province/État": org.get("state") or p.get("state") or "",
-            "Pays": org.get("country") or p.get("country") or "",
-            "Source": "Apollo.io",
-            "Date de recherche": _aujourd_hui(),
-        })
+
+    for page in range(1, _APOLLO_MAX_PAGES + 1):
+        corps = {
+            "q_organization_name": entreprise,
+            "person_titles": FILTRES_DEPARTEMENT[departement]["titres"],
+            "page": page,
+            "per_page": _APOLLO_LIMITE,
+        }
+        if pays:
+            corps["person_locations"] = pays
+
+        try:
+            rep = requests.post(url, headers=entetes, json=corps, timeout=config.TIMEOUT)
+        except requests.exceptions.Timeout:
+            if page == 1:
+                return [], ["Apollo.io : délai dépassé (10 s)."]
+            break
+        except requests.exceptions.RequestException as e:
+            if page == 1:
+                return [], [f"Apollo.io : erreur réseau ({e})."]
+            break
+
+        if rep.status_code in (401, 403):
+            if page == 1:
+                raise ErreurAPI("Apollo.io : clé API invalide ou accès refusé.", "Apollo.io")
+            break
+        if rep.status_code == 429:
+            if page == 1:
+                raise ErreurAPI("Apollo.io : quota d'appels dépassé.", "Apollo.io")
+            break
+        if rep.status_code != 200:
+            if page == 1:
+                return [], [f"Apollo.io : réponse inattendue (code {rep.status_code})."]
+            break
+
+        charge = rep.json() or {}
+        personnes = charge.get("people", []) or []
+        for p in personnes:
+            org = p.get("organization") or {}
+            courriel = p.get("email") or ""
+            if courriel.startswith("email_not_unlocked"):
+                courriel = ""  # courriel verrouillé sur le plan gratuit Apollo
+            contacts.append({
+                "Entreprise": entreprise,
+                "Prénom": p.get("first_name") or "",
+                "Nom": p.get("last_name") or "",
+                "Titre": p.get("title") or "",
+                "Département": departement,
+                "Courriel": courriel,
+                "Confiance (%)": "",
+                "Ville": org.get("city") or p.get("city") or "",
+                "Province/État": org.get("state") or p.get("state") or "",
+                "Pays": org.get("country") or p.get("country") or "",
+                "Source": "Apollo.io",
+                "Date de recherche": _aujourd_hui(),
+            })
+
+        # Fin de pagination : page incomplète ou dernière page annoncée.
+        pagination = charge.get("pagination") or {}
+        total_pages = pagination.get("total_pages")
+        if len(personnes) < _APOLLO_LIMITE:
+            break
+        if total_pages and page >= total_pages:
+            break
 
     avertissements = []
     if not contacts:

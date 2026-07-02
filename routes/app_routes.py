@@ -65,6 +65,12 @@ def _nb_trouves(contacts):
     return sum(1 for c in contacts if c.get("Prénom") or c.get("Courriel"))
 
 
+def _nb_entreprises(contacts):
+    """Nombre d'entreprises distinctes représentées dans une liste de contacts."""
+    return len({(c.get("Entreprise") or "").strip()
+                for c in contacts if (c.get("Entreprise") or "").strip()})
+
+
 def _journaliser(db, utilisateur, entreprise, departement, region, contacts):
     db.add(HistoriqueRecherche(
         utilisateur_id=utilisateur.id,
@@ -174,6 +180,8 @@ def recherche_simple(request: Request,
                   **_contexte_app(db, utilisateur,
                                   resultats=contacts, erreur=erreur,
                                   charge=_encoder(contacts) if contacts else "",
+                                  nb_contacts=_nb_trouves(contacts),
+                                  nb_entreprises=_nb_entreprises(contacts),
                                   entreprise=entreprise, departement=departement,
                                   region=region))
 
@@ -232,6 +240,8 @@ def recherche_lot(request: Request,
     return rendre(request, "app.html", utilisateur=utilisateur,
                   **_contexte_app(db, utilisateur,
                                   resultats=tous, erreur=erreur,
+                                  nb_contacts=_nb_trouves(tous),
+                                  nb_entreprises=_nb_entreprises(tous),
                                   charge=_encoder(tous) if tous else ""))
 
 
@@ -312,6 +322,7 @@ def recherche_lot_flux(request: Request,
         yield json.dumps({
             "type": "done", "colonnes": COLONNES, "resultats": tous,
             "charge": _encoder(tous) if tous else "", "erreur": erreur,
+            "nb_contacts": _nb_trouves(tous), "nb_entreprises": _nb_entreprises(tous),
         }, ensure_ascii=False) + "\n"
 
     return StreamingResponse(flux(), media_type="application/x-ndjson")

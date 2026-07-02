@@ -151,6 +151,30 @@
     return v !== "" && !isNaN(parseFloat(v));
   }
 
+  // Regroupe visuellement les lignes par entreprise selon l'ORDRE COURANT :
+  // le nom (colonne 0) n'est affiché que sur la 1re ligne de chaque groupe de
+  // lignes consécutives, avec une séparation avant chaque nouveau groupe.
+  // La valeur réelle reste dans data-entreprise (tri, filtre, modale).
+  function regrouper(tbody) {
+    if (!tbody) { return; }
+    var prec = null, premier = true;
+    Array.prototype.forEach.call(tbody.rows, function (tr) {
+      if (tr.style.display === "none") { return; }
+      var ent = tr.dataset.entreprise != null ? tr.dataset.entreprise
+        : (tr.cells[0] ? tr.cells[0].textContent : "");
+      var nouveau = ent !== prec;
+      if (tr.cells[0]) { tr.cells[0].textContent = nouveau ? ent : ""; }
+      tr.classList.toggle("groupe-debut", nouveau && !premier);
+      prec = ent; premier = false;
+    });
+  }
+
+  function valeurTri(tr, idx) {
+    // Colonne 0 = Entreprise : on lit data-entreprise (la cellule peut être vidée).
+    if (idx === 0) { return tr.dataset.entreprise != null ? tr.dataset.entreprise : ""; }
+    return tr.cells[idx] ? tr.cells[idx].textContent.trim() : "";
+  }
+
   function activerResultats(bloc) {
     if (!bloc) { return; }
     var table = bloc.querySelector("table");
@@ -161,15 +185,16 @@
     var entetes = Array.prototype.map.call(
       thead.rows[0].cells, function (th) { return th.textContent.trim(); });
 
-    // Filtre texte en direct
+    // Filtre texte en direct (inclut le nom d'entreprise même s'il est masqué)
     var filtre = bloc.querySelector(".filtre-resultats");
     if (filtre) {
       filtre.addEventListener("input", function () {
         var q = filtre.value.trim().toLowerCase();
         Array.prototype.forEach.call(tbody.rows, function (tr) {
-          tr.style.display = (!q || tr.textContent.toLowerCase().indexOf(q) !== -1)
-            ? "" : "none";
+          var foin = (tr.textContent + " " + (tr.dataset.entreprise || "")).toLowerCase();
+          tr.style.display = (!q || foin.indexOf(q) !== -1) ? "" : "none";
         });
+        regrouper(tbody);
       });
     }
 
@@ -186,8 +211,7 @@
         th.classList.add(asc ? "tri-asc" : "tri-desc");
         var lignes = Array.prototype.slice.call(tbody.rows);
         lignes.sort(function (a, b) {
-          var va = a.cells[idx] ? a.cells[idx].textContent.trim() : "";
-          var vb = b.cells[idx] ? b.cells[idx].textContent.trim() : "";
+          var va = valeurTri(a, idx), vb = valeurTri(b, idx);
           var r;
           if (estNombre(va) && estNombre(vb)) {
             r = parseFloat(va) - parseFloat(vb);
@@ -197,10 +221,11 @@
           return asc ? r : -r;
         });
         lignes.forEach(function (tr) { tbody.appendChild(tr); });
+        regrouper(tbody);
       });
     });
 
-    // Clic sur une ligne -> modale détaillée
+    // Clic sur une ligne -> modale détaillée (repli sur data-entreprise si masqué)
     Array.prototype.forEach.call(tbody.rows, function (tr) {
       tr.classList.add("cliquable");
       var ouvrir = function () {
@@ -208,6 +233,7 @@
         var paires = Array.prototype.map.call(tr.cells, function (td, i) {
           var label = entetes[i] || ("Champ " + (i + 1));
           var valeur = td.textContent.trim();
+          if (i === 0 && !valeur && tr.dataset.entreprise) { valeur = tr.dataset.entreprise; }
           if (label.toLowerCase().indexOf("courriel") !== -1 && valeur) {
             courriel = valeur;
           }
@@ -220,6 +246,9 @@
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ouvrir(); }
       });
     });
+
+    // Normalise l'affichage groupé (idempotent avec le rendu serveur).
+    regrouper(tbody);
   }
 
   // Active les résultats déjà rendus par le serveur (recherche simple, etc.)
@@ -260,7 +289,7 @@
     return d.innerHTML;
   }
 
-  function construireResultats(colonnes, resultats, charge, csrf) {
+  function construireResultats(colonnes, resultats, charge, csrf, nbContacts, nbEntreprises) {
     var bloc = document.createElement("div");
     bloc.className = "resultats";
 
@@ -268,14 +297,18 @@
       return '<th data-col="' + i + '">' + echapper(c) + "</th>";
     }).join("") + "</tr>";
     var corps = resultats.map(function (ligne) {
-      return "<tr tabindex=\"0\">" + colonnes.map(function (c) {
-        return "<td>" + echapper(ligne[c] != null ? ligne[c] : "") + "</td>";
+      var ent = ligne["Entreprise"] != null ? ligne["Entreprise"] : "";
+      return '<tr tabindex="0" data-entreprise="' + echapper(ent) + '">' + colonnes.map(function (c, i) {
+        var cls = i === 0 ? ' class="cell-entreprise"' : "";
+        return "<td" + cls + ">" + echapper(ligne[c] != null ? ligne[c] : "") + "</td>";
       }).join("") + "</tr>";
     }).join("");
 
     bloc.innerHTML =
       '<div class="resultats-tete">' +
-        '<h2><span class="pastille">' + resultats.length + "</span> résultat(s)</h2>" +
+        '<h2><span class="pastille">' + (nbContacts != null ? nbContacts : resultats.length) +
+          '</span> contact(s) trouvé(s) <span class="compteur-sec">· ' +
+          (nbEntreprises != null ? nbEntreprises : 1) + ' entreprise(s)</span></h2>' +
         '<form method="post" action="/app/telecharger">' +
           '<input type="hidden" name="csrf_token" value="' + echapper(csrf) + '">' +
           '<input type="hidden" name="charge" value="' + echapper(charge) + '">' +
@@ -370,7 +403,8 @@
                 }
                 if (obj.resultats && obj.resultats.length) {
                   var csrf = (formLot.querySelector('[name="csrf_token"]') || {}).value || "";
-                  var bloc = construireResultats(obj.colonnes, obj.resultats, obj.charge, csrf);
+                  var bloc = construireResultats(obj.colonnes, obj.resultats, obj.charge, csrf,
+                                                 obj.nb_contacts, obj.nb_entreprises);
                   zoneResultats.appendChild(bloc);
                   activerResultats(bloc);
                 } else if (!obj.erreur) {

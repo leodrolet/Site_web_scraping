@@ -649,6 +649,14 @@ tbody tr:hover td { background: #FAFBFE; }
 /* le courriel lu comme un enregistrement */
 .resultats tbody td:nth-child(6) { font-family: var(--f-mono); color: var(--cobalt-profond); }
 
+/* regroupement par entreprise : nom affiché une fois, séparation nette entre groupes */
+.compteur-sec { color: var(--ardoise); font-weight: 400; font-size: .92rem; }
+.table-resultats td.cell-entreprise { font-weight: 600; color: var(--encre); white-space: nowrap; }
+.table-resultats tbody tr.groupe-debut td { border-top: 2px solid var(--ligne-forte); }
+/* liseré cobalt sur la première cellule pour matérialiser le groupe */
+.table-resultats tbody td.cell-entreprise { box-shadow: inset 3px 0 0 var(--cobalt-pale); }
+.table-resultats tbody tr.groupe-debut td.cell-entreprise { box-shadow: inset 3px 0 0 var(--cobalt); }
+
 /* ------------------------------------------------------- Abonnement --- */
 .abo-actuel { margin-bottom: 2.2rem; }
 .abo-actuel-tete {

@@ -159,7 +159,10 @@
     {% if resultats is defined and resultats %}
       <div class="resultats">
         <div class="resultats-tete">
-          <h2><span class="pastille">{{ resultats|length }}</span> résultat(s)</h2>
+          <h2>
+            <span class="pastille">{{ nb_contacts if nb_contacts is defined else resultats|length }}</span> contact(s) trouvé(s)
+            <span class="compteur-sec">· {{ nb_entreprises if nb_entreprises is defined else 1 }} entreprise(s)</span>
+          </h2>
           <form method="post" action="/app/telecharger">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="charge" value="{{ charge }}">
@@ -182,8 +185,20 @@
               <tr>{% for c in colonnes %}<th data-col="{{ loop.index0 }}">{{ c }}</th>{% endfor %}</tr>
             </thead>
             <tbody>
+              {% set ns = namespace(prev=none) %}
               {% for ligne in resultats %}
-                <tr tabindex="0">{% for c in colonnes %}<td>{{ ligne.get(c, '') }}</td>{% endfor %}</tr>
+                {% set ent = ligne.get('Entreprise', '') %}
+                {% set nouveau = ent != ns.prev %}
+                <tr tabindex="0" data-entreprise="{{ ent }}"{% if nouveau and not loop.first %} class="groupe-debut"{% endif %}>
+                  {% for c in colonnes %}
+                    {% if loop.first %}
+                      <td class="cell-entreprise">{% if nouveau %}{{ ligne.get(c, '') }}{% endif %}</td>
+                    {% else %}
+                      <td>{{ ligne.get(c, '') }}</td>
+                    {% endif %}
+                  {% endfor %}
+                </tr>
+                {% set ns.prev = ent %}
               {% endfor %}
             </tbody>
           </table>
