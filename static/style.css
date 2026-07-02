@@ -527,7 +527,15 @@ input[type="file"]::file-selector-button {
   margin-bottom: 1.4rem;
   box-shadow: var(--ombre-1);
 }
-.quota-bandeau.quota-bloque { border-color: #F0D3A6; background: var(--ambre-pale); }
+.quota-bandeau.quota-warn { border-color: #F0D3A6; background: var(--ambre-pale); }
+.quota-bandeau.quota-bloque { border-color: #F3C4C4; background: var(--erreur-pale); }
+.badge-illimite {
+  display: inline-flex; align-items: center;
+  font-family: var(--f-mono); font-size: .74rem; font-weight: 500;
+  letter-spacing: .03em;
+  color: var(--cobalt-profond); background: var(--cobalt-pale);
+  border: 1px solid #D3DEFC; padding: .18rem .55rem; border-radius: var(--r-pill);
+}
 .quota-tete { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; }
 .quota-plan {
   display: inline-flex; align-items: center; gap: .45rem;
@@ -546,7 +554,8 @@ input[type="file"]::file-selector-button {
   background: linear-gradient(90deg, var(--cobalt), var(--cobalt-profond));
   transition: width .5s var(--pas);
 }
-.quota-bloque .quota-bar > span { background: linear-gradient(90deg, var(--ambre), #C9770F); }
+.quota-warn .quota-bar > span { background: linear-gradient(90deg, var(--ambre), #C9770F); }
+.quota-bloque .quota-bar > span { background: linear-gradient(90deg, #EF4444, var(--erreur)); }
 
 /* onglets */
 .tabs {
@@ -725,6 +734,100 @@ tbody tr:hover td { background: #FAFBFE; }
 .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s var(--pas), transform .6s var(--pas); }
 .reveal.vu { opacity: 1; transform: none; }
 
+/* -------------------------------------------------- Historique récent --- */
+.historique { padding: 0; margin-bottom: 1.6rem; overflow: hidden; }
+.hist-tete {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; padding: 1.1rem 1.3rem .9rem;
+  border-bottom: 1px solid var(--ligne);
+}
+.hist-tete h2 { font-size: 1.1rem; margin: 0; }
+.hist-tete .muted { font-size: .82rem; }
+.table-hist { font-size: .9rem; }
+.table-hist td, .table-hist th { padding: .6rem 1.3rem; }
+.table-hist td:first-child { font-weight: 600; }
+.hist-date { font-family: var(--f-mono); font-size: .82rem; color: var(--ardoise); white-space: nowrap; }
+.pastille-mini {
+  display: inline-grid; place-items: center; min-width: 26px; height: 22px;
+  padding: 0 .45rem; border-radius: var(--r-pill);
+  background: var(--cobalt-pale); color: var(--cobalt-profond);
+  font-family: var(--f-mono); font-size: .78rem; font-weight: 600;
+}
+.btn-relancer { --h: 34px; padding: 0 .7rem; font-size: .84rem; white-space: nowrap; }
+.btn-relancer .ic { width: 15px; height: 15px; }
+
+/* ------------------------------------------ Outils du tableau résultats --- */
+.resultats-outils {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; padding: .9rem 1.3rem;
+  border-bottom: 1px solid var(--ligne);
+}
+.resultats-outils .input-wrap { flex: 1; min-width: 220px; max-width: 360px; }
+.filtre-resultats { padding-left: 2.5rem; }
+.resultats-hint { font-size: .82rem; }
+
+/* en-têtes triables */
+thead th.triable { cursor: pointer; user-select: none; position: relative; padding-right: 1.5rem; }
+thead th.triable:hover { color: var(--cobalt); }
+thead th.triable::after {
+  content: "⇅"; position: absolute; right: .6rem; opacity: .35; font-size: .85em;
+}
+thead th.tri-asc::after { content: "↑"; opacity: 1; color: var(--cobalt); }
+thead th.tri-desc::after { content: "↓"; opacity: 1; color: var(--cobalt); }
+
+/* lignes cliquables */
+tbody tr.cliquable { cursor: pointer; }
+tbody tr.cliquable:focus-visible { outline: 2px solid var(--cobalt); outline-offset: -2px; }
+
+/* ------------------------------------------- Progression recherche lot --- */
+.lot-progress {
+  margin-top: 1.2rem; padding: 1rem 1.1rem;
+  border: 1px solid var(--ligne); border-radius: var(--r);
+  background: var(--brume);
+}
+.lot-progress-tete {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; margin-bottom: .7rem; font-size: .92rem; font-weight: 600;
+}
+.lot-progress-tete .muted { font-weight: 400; font-family: var(--f-mono); font-size: .82rem; }
+#lot-progress-barre {
+  display: block; height: 100%; border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--cobalt), var(--cobalt-profond));
+  transition: width .3s var(--pas);
+}
+
+/* ---------------------------------------------- Modale détail contact --- */
+.modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 1.25rem; }
+.modal[hidden] { display: none; }
+.modal-fond { position: absolute; inset: 0; background: rgba(14, 21, 36, .55); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+.modal-boite {
+  position: relative; width: 100%; max-width: 480px; max-height: 85vh; overflow: auto;
+  background: var(--surface); border: 1px solid var(--ligne);
+  border-radius: var(--r-lg); box-shadow: var(--ombre-3);
+}
+.modal-tete {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: 1.1rem 1.3rem; border-bottom: 1px solid var(--ligne);
+  position: sticky; top: 0; background: var(--surface);
+}
+.modal-tete h2 { font-size: 1.15rem; margin: 0; }
+.modal-fermer {
+  display: grid; place-items: center; width: 36px; height: 36px;
+  border: 1px solid var(--ligne-forte); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--ardoise); cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.modal-fermer:hover { color: var(--encre); border-color: var(--cobalt); }
+.modal-corps { margin: 0; padding: 1.1rem 1.3rem; display: grid; grid-template-columns: 130px 1fr; gap: .55rem 1rem; }
+.modal-corps dt {
+  font-family: var(--f-mono); font-size: .72rem; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--ardoise); align-self: center;
+}
+.modal-corps dd { margin: 0; font-size: .92rem; word-break: break-word; }
+.modal-corps dd.vide { color: var(--ardoise-clair); }
+.modal-actions { padding: 0 1.3rem 1.3rem; }
+.modal-actions .btn { width: 100%; }
+
 /* --------------------------------------------------------- Responsive --- */
 @media (max-width: 900px) {
   .hero-inner { grid-template-columns: 1fr; gap: 2.5rem; padding-top: 3.5rem; }
@@ -741,6 +844,9 @@ tbody tr:hover td { background: #FAFBFE; }
   .tab { flex: 1; justify-content: center; }
   .carte-form { padding: 1.6rem; }
   .footer-inner { flex-direction: column; text-align: center; }
+  .modal-corps { grid-template-columns: 1fr; gap: .1rem .5rem; }
+  .modal-corps dt { margin-top: .5rem; }
+  .resultats-outils .input-wrap { max-width: none; }
 }
 
 /* ------------------------------------------------- Mouvement réduit --- */

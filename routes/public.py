@@ -1,6 +1,7 @@
 """public.py — Pages publiques (pas de connexion requise)."""
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 import plans
@@ -14,6 +15,11 @@ router = APIRouter()
 @router.get("/")
 def accueil(request: Request, db: Session = Depends(get_db)):
     utilisateur = utilisateur_actuel(request, db)
+    # Vérification de session NON bloquante : un visiteur connecté est envoyé
+    # directement vers l'outil (comme /login et /inscription) ; un visiteur
+    # anonyme voit la page de présentation.
+    if utilisateur is not None:
+        return RedirectResponse("/app", status_code=303)
     return rendre(request, "accueil.html", utilisateur=utilisateur,
                   plans=plans.liste_plans())
 

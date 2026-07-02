@@ -15,12 +15,13 @@ import json
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import (JSONResponse, RedirectResponse, Response,
+                               StreamingResponse)
 from sqlalchemy.orm import Session
 
 import plans
 from auth import exiger_connexion, valider_csrf
-from database import HistoriqueRecherche, Utilisateur, get_db
+from database import HistoriqueRecherche, SessionLocal, Utilisateur, get_db
 from export import COLONNES, generer_excel
 from recherche import ErreurAPI, rechercher_entreprise
 from templating import rendre
@@ -29,6 +30,12 @@ router = APIRouter()
 
 DEPARTEMENTS = ["Marketing", "Ventes", "Les deux"]
 REGIONS = ["Canada", "États-Unis", "Europe", "Toutes"]
+
+# Bornes anti-abus pour l'import CSV (type, taille, nombre de lignes).
+MAX_OCTETS_CSV = 1_000_000   # 1 Mo
+MAX_LIGNES_CSV = 1000
+# Nombre de recherches récentes affichées sur /app.
+NB_HISTORIQUE = 8
 
 # Message unique montré à l'utilisateur quand un service externe échoue.
 # Aucun détail sur le service concerné ni la cause (clé, quota...).
@@ -66,13 +73,55 @@ def _journaliser(db, utilisateur, entreprise, departement, region, contacts):
         nb_contacts_trouves=_nb_trouves(contacts)))
 
 
+def _historique_recent(db, utilisateur, n=NB_HISTORIQUE):
+    """Les n dernières recherches de l'utilisateur (récent -> ancien).
+
+    Ne contient QUE les champs stockés dans `historique_recherches`
+    (entreprise, departement, region, nb_contacts_trouves, date) : les contacts
+    eux-mêmes ne sont pas conservés en base, donc pas affichables ici.
+    """
+    return (db.query(HistoriqueRecherche)
+            .filter(HistoriqueRecherche.utilisateur_id == utilisateur.id)
+            .order_by(HistoriqueRecherche.date.desc())
+            .limit(n).all())
+
+
 def _contexte_app(db, utilisateur, **extra):
-    """Contexte commun de la page /app : colonnes, listes, et état du quota."""
+    """Contexte commun de la page /app : colonnes, listes, quota, historique."""
     etat = plans.etat_quota(db, utilisateur)
     contexte = dict(_BASE)
-    contexte.update(quota=etat, bloque_quota=etat["depasse"])
+    contexte.update(quota=etat, bloque_quota=etat["depasse"],
+                    historique=_historique_recent(db, utilisateur))
     contexte.update(extra)
     return contexte
+
+
+def _lignes_depuis_csv(fichier):
+    """Lit et valide un CSV téléversé.
+
+    Retourne (lignes, erreur) : `lignes` est une liste de dicts (clés en
+    minuscules) ou None si erreur ; `erreur` est un message prêt à afficher.
+    """
+    if not (fichier.filename or "").lower().endswith(".csv"):
+        return None, "Merci de téléverser un fichier .csv."
+
+    brut = fichier.file.read(MAX_OCTETS_CSV + 1)
+    if len(brut) > MAX_OCTETS_CSV:
+        return None, "Fichier trop volumineux (max 1 Mo)."
+
+    contenu = brut.decode("utf-8-sig", errors="replace")
+    lecteur = csv.DictReader(io.StringIO(contenu))
+    lignes = [{(k or "").strip().lower(): (v or "").strip()
+               for k, v in row.items()} for row in lecteur]
+
+    if len(lignes) > MAX_LIGNES_CSV:
+        return None, f"Fichier trop long (max {MAX_LIGNES_CSV} lignes)."
+
+    requises = {"entreprise", "departement", "region"}
+    if not lignes or not requises.issubset(set(lignes[0].keys())):
+        return None, ("Le CSV doit contenir les colonnes : "
+                      "entreprise, departement, region.")
+    return lignes, None
 
 
 # ----------------------------------------------------------------------
@@ -149,36 +198,10 @@ def recherche_lot(request: Request,
         return rendre(request, "app.html", utilisateur=utilisateur,
                       **_contexte_app(db, utilisateur))
 
-    # Bornes anti-abus : type, taille et nombre de lignes.
-    if not (fichier.filename or "").lower().endswith(".csv"):
+    lignes, erreur_csv = _lignes_depuis_csv(fichier)
+    if erreur_csv:
         return rendre(request, "app.html", utilisateur=utilisateur,
-                      **_contexte_app(db, utilisateur,
-                                      erreur="Merci de téléverser un fichier .csv."))
-
-    MAX_OCTETS = 1_000_000   # 1 Mo
-    MAX_LIGNES = 1000
-    brut = fichier.file.read(MAX_OCTETS + 1)
-    if len(brut) > MAX_OCTETS:
-        return rendre(request, "app.html", utilisateur=utilisateur,
-                      **_contexte_app(db, utilisateur,
-                                      erreur="Fichier trop volumineux (max 1 Mo)."))
-
-    contenu = brut.decode("utf-8-sig", errors="replace")
-    lecteur = csv.DictReader(io.StringIO(contenu))
-    lignes = [{(k or "").strip().lower(): (v or "").strip()
-               for k, v in row.items()} for row in lecteur]
-
-    if len(lignes) > MAX_LIGNES:
-        return rendre(request, "app.html", utilisateur=utilisateur,
-                      **_contexte_app(db, utilisateur,
-                                      erreur=f"Fichier trop long (max {MAX_LIGNES} lignes)."))
-
-    requises = {"entreprise", "departement", "region"}
-    if not lignes or not requises.issubset(set(lignes[0].keys())):
-        return rendre(request, "app.html", utilisateur=utilisateur,
-                      **_contexte_app(db, utilisateur,
-                                      erreur="Le CSV doit contenir les colonnes : "
-                                             "entreprise, departement, region."))
+                      **_contexte_app(db, utilisateur, erreur=erreur_csv))
 
     # Budget de recherches restant ce mois (None = illimité).
     budget = etat["restantes"]
@@ -210,6 +233,88 @@ def recherche_lot(request: Request,
                   **_contexte_app(db, utilisateur,
                                   resultats=tous, erreur=erreur,
                                   charge=_encoder(tous) if tous else ""))
+
+
+# ----------------------------------------------------------------------
+# Recherche en lot — flux de progression (NDJSON, ligne par ligne)
+# ----------------------------------------------------------------------
+# Choix technique : streaming (StreamingResponse) consommé côté client via
+# fetch() + ReadableStream, plutôt que du polling avec identifiant de job.
+# Raison : tout le traitement tient dans UNE requête, sans état partagé entre
+# instances (le polling exigerait un store de job partagé, fragile en serverless
+# multi-instances — même limite que le limiteur mémoire). Le flux émet une ligne
+# JSON par entreprise traitée, puis une ligne finale « done » avec les résultats
+# complets et la charge base64 pour le téléchargement Excel.
+@router.post("/app/lot/flux")
+def recherche_lot_flux(request: Request,
+                       fichier: UploadFile = File(...),
+                       csrf_token: str = Form(""),
+                       utilisateur: Utilisateur = Depends(exiger_connexion),
+                       db: Session = Depends(get_db)):
+    if not valider_csrf(request, csrf_token):
+        return JSONResponse({"erreur": "Session expirée, merci de réessayer."},
+                            status_code=400)
+
+    # Vérification du quota côté serveur (comme /app/lot) avant tout traitement.
+    etat = plans.etat_quota(db, utilisateur)
+    if etat["depasse"]:
+        return JSONResponse(
+            {"erreur": "Limite mensuelle atteinte : passez à un plan supérieur "
+                       "pour lancer une recherche en lot."}, status_code=400)
+
+    lignes, erreur_csv = _lignes_depuis_csv(fichier)
+    if erreur_csv:
+        return JSONResponse({"erreur": erreur_csv}, status_code=400)
+
+    valides = [l for l in lignes if l.get("entreprise")]
+    total = len(valides)
+    uid = utilisateur.id
+    budget_initial = etat["restantes"]  # None = illimité
+
+    def flux():
+        # Session dédiée : sa durée de vie est celle du flux (pas de la requête).
+        db2 = SessionLocal()
+        tous, erreur, budget, k = [], None, budget_initial, 0
+        try:
+            for ligne in valides:
+                if budget is not None and budget <= 0:
+                    erreur = ("Limite mensuelle atteinte : les entreprises "
+                              "restantes du fichier n'ont pas été traitées. "
+                              "Passez à un plan supérieur pour en faire plus.")
+                    break
+                ent = ligne.get("entreprise", "")
+                dep = ligne.get("departement") or "Les deux"
+                reg = ligne.get("region") or "Toutes"
+                try:
+                    res = rechercher_entreprise(ent, dep, reg)
+                except ErreurAPI as e:
+                    # Détail en logs serveur ; message générique côté client.
+                    print(f"[/app/lot/flux] ErreurAPI : {e.message}", flush=True)
+                    erreur = MSG_SERVICE_INDISPO
+                    break
+                contacts = res["contacts"]
+                tous.extend(contacts)
+                db2.add(HistoriqueRecherche(
+                    utilisateur_id=uid, entreprise=(ent or "").strip(),
+                    departement=dep, region=reg,
+                    nb_contacts_trouves=_nb_trouves(contacts)))
+                if budget is not None:
+                    budget -= 1
+                k += 1
+                # Progression : jamais le nom d'un fournisseur, seulement l'état.
+                yield json.dumps({
+                    "type": "progress", "courante": k, "total": total,
+                    "entreprise": ent, "trouve": _nb_trouves(contacts) > 0,
+                }, ensure_ascii=False) + "\n"
+            db2.commit()
+        finally:
+            db2.close()
+        yield json.dumps({
+            "type": "done", "colonnes": COLONNES, "resultats": tous,
+            "charge": _encoder(tous) if tous else "", "erreur": erreur,
+        }, ensure_ascii=False) + "\n"
+
+    return StreamingResponse(flux(), media_type="application/x-ndjson")
 
 
 # ----------------------------------------------------------------------

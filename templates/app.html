@@ -8,15 +8,16 @@
     <p class="muted">Recherchez un contact, ou traitez toute une liste d'un coup.</p>
   </div>
 
+  <!-- 1 · Statut du plan -->
   {% if quota %}
-    <div class="quota-bandeau{% if bloque_quota %} quota-bloque{% endif %}">
+    <div class="quota-bandeau{% if bloque_quota %} quota-bloque{% elif not quota.illimite and quota.pourcentage >= 80 %} quota-warn{% endif %}">
       <div class="quota-tete">
         <span class="quota-plan">
-          <svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+          <svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
           Plan {{ quota.plan.nom }}
         </span>
         {% if quota.illimite %}
-          <span class="quota-compte">Recherches illimitées</span>
+          <span class="quota-compte"><span class="badge-illimite">Recherches illimitées</span></span>
         {% else %}
           <span class="quota-compte"><strong>{{ quota.utilisees }}</strong> / {{ quota.limite }} recherches ce mois</span>
         {% endif %}
@@ -30,29 +31,71 @@
 
   {% if bloque_quota %}
     <div class="alerte alerte-warn">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
       <span>Limite atteinte : votre plan {{ quota.plan.nom }} inclut {{ quota.limite }} recherches par mois. <a href="/abonnement">Passez à un plan supérieur</a> pour continuer, ou revenez le mois prochain.</span>
     </div>
   {% endif %}
 
   {% if erreur %}
     <div class="alerte alerte-error">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
       <span>{{ erreur }}</span>
     </div>
   {% endif %}
 
+  <!-- 2 · Recherches récentes -->
+  {% if historique %}
+    <div class="carte historique">
+      <div class="hist-tete">
+        <h2>Recherches récentes</h2>
+        <span class="muted">Relancer réutilise du quota — à vous de confirmer.</span>
+      </div>
+      <div class="tableau-scroll">
+        <table class="table-hist">
+          <thead>
+            <tr>
+              <th>Entreprise</th><th>Département</th><th>Région</th>
+              <th>Date</th><th>Contacts</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in historique %}
+              <tr>
+                <td>{{ h.entreprise }}</td>
+                <td>{{ h.departement }}</td>
+                <td>{{ h.region }}</td>
+                <td class="hist-date">{{ h.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td><span class="pastille-mini">{{ h.nb_contacts_trouves }}</span></td>
+                <td>
+                  <button type="button" class="btn-ghost btn-relancer"
+                          data-entreprise="{{ h.entreprise }}"
+                          data-departement="{{ h.departement }}"
+                          data-region="{{ h.region }}">
+                    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg>
+                    Relancer
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- 3 · Choix du mode -->
   <div class="tabs">
     <button class="tab actif" type="button" data-cible="onglet-simple">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       Recherche simple
     </button>
     <button class="tab" type="button" data-cible="onglet-lot">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
       Recherche en lot
     </button>
   </div>
 
+  <!-- 4 · Formulaires -->
   <!-- Onglet 1 : recherche simple -->
   <div id="onglet-simple" class="panneau">
     <form method="post" action="/app/recherche" data-loading>
@@ -81,8 +124,8 @@
         </div>
       </div>
       <button class="btn" type="submit"{% if bloque_quota %} disabled{% endif %}>
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        Rechercher
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <span class="btn-libelle">Rechercher</span>
       </button>
       <div class="progress" hidden><div class="barre"></div></div>
     </form>
@@ -90,50 +133,83 @@
 
   <!-- Onglet 2 : recherche en lot -->
   <div id="onglet-lot" class="panneau" hidden>
-    <form method="post" action="/app/lot" enctype="multipart/form-data" data-loading>
+    <form method="post" action="/app/lot" enctype="multipart/form-data"
+          id="form-lot" data-flux="/app/lot/flux">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <p>Téléverse un fichier CSV avec les colonnes
         <code>entreprise, departement, region</code>.</p>
-      <input type="file" name="fichier" accept=".csv" required>
+      <input type="file" id="fichier" name="fichier" accept=".csv" required>
       <button class="btn" type="submit"{% if bloque_quota %} disabled{% endif %}>
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
-        Traiter toute la liste
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        <span class="btn-libelle">Traiter toute la liste</span>
       </button>
-      <div class="progress" hidden><div class="barre"></div></div>
     </form>
+    <!-- Progression du lot (rempli par app.js pendant le flux) -->
+    <div id="lot-progress" class="lot-progress" hidden>
+      <div class="lot-progress-tete">
+        <span id="lot-progress-texte">Préparation…</span>
+        <span id="lot-progress-compte" class="muted"></span>
+      </div>
+      <div class="quota-bar"><span id="lot-progress-barre" style="width:0%"></span></div>
+    </div>
   </div>
 
-  {% if resultats is defined and resultats %}
-    <div class="resultats">
-      <div class="resultats-tete">
-        <h2><span class="pastille">{{ resultats|length }}</span> résultat(s)</h2>
-        <form method="post" action="/app/telecharger">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <input type="hidden" name="charge" value="{{ charge }}">
-          <button class="btn" type="submit">
-            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-            Télécharger Excel
-          </button>
-        </form>
+  <!-- 5 · Résultats -->
+  <div id="zone-resultats">
+    {% if resultats is defined and resultats %}
+      <div class="resultats">
+        <div class="resultats-tete">
+          <h2><span class="pastille">{{ resultats|length }}</span> résultat(s)</h2>
+          <form method="post" action="/app/telecharger">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="charge" value="{{ charge }}">
+            <button class="btn" type="submit">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+              Télécharger Excel
+            </button>
+          </form>
+        </div>
+        <div class="resultats-outils">
+          <div class="input-wrap">
+            <svg class="input-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" class="filtre-resultats" placeholder="Filtrer les résultats…" aria-label="Filtrer les résultats">
+          </div>
+          <span class="resultats-hint muted">Cliquez une ligne pour le détail · cliquez un en-tête pour trier</span>
+        </div>
+        <div class="tableau-scroll">
+          <table class="table-resultats">
+            <thead>
+              <tr>{% for c in colonnes %}<th data-col="{{ loop.index0 }}">{{ c }}</th>{% endfor %}</tr>
+            </thead>
+            <tbody>
+              {% for ligne in resultats %}
+                <tr tabindex="0">{% for c in colonnes %}<td>{{ ligne.get(c, '') }}</td>{% endfor %}</tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div class="tableau-scroll">
-        <table>
-          <thead>
-            <tr>{% for c in colonnes %}<th>{{ c }}</th>{% endfor %}</tr>
-          </thead>
-          <tbody>
-            {% for ligne in resultats %}
-              <tr>{% for c in colonnes %}<td>{{ ligne.get(c, '') }}</td>{% endfor %}</tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    {% elif resultats is defined %}
+      <div class="alerte alerte-info">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span>Aucun résultat pour cette recherche.</span>
       </div>
-    </div>
-  {% elif resultats is defined %}
-    <div class="alerte alerte-info">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
-      <span>Aucun résultat pour cette recherche.</span>
-    </div>
-  {% endif %}
+    {% endif %}
+  </div>
 </section>
+
+<!-- Aperçu détaillé d'un contact (rempli par app.js) -->
+<div id="modal-contact" class="modal" hidden>
+  <div class="modal-fond" data-fermer></div>
+  <div class="modal-boite" role="dialog" aria-modal="true" aria-labelledby="modal-titre">
+    <div class="modal-tete">
+      <h2 id="modal-titre">Détail du contact</h2>
+      <button type="button" class="modal-fermer" data-fermer aria-label="Fermer">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <dl id="modal-corps" class="modal-corps"></dl>
+    <div id="modal-actions" class="modal-actions"></div>
+  </div>
+</div>
 {% endblock %}

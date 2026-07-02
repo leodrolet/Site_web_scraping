@@ -25,7 +25,7 @@ PLANS = {
         ],
     },
     "pro": {
-        "cle": "pro", "nom": "Pro", "prix": 29, "limite": 500,
+        "cle": "pro", "nom": "Pro", "prix": 36.99, "limite": 500,
         "populaire": True,
         "fonctions": [
             "500 recherches / mois",
@@ -35,7 +35,7 @@ PLANS = {
         ],
     },
     "business": {
-        "cle": "business", "nom": "Business", "prix": 79, "limite": None,
+        "cle": "business", "nom": "Business", "prix": 98.99, "limite": None,
         "fonctions": [
             "Recherches illimitées",
             "Recherche simple et en lot (CSV)",

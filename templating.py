@@ -10,6 +10,21 @@ _TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templ
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 
+def _prix_fr(valeur):
+    """Formate un prix à la française : 0 -> « 0 », 36.99 -> « 36,99 »."""
+    try:
+        nombre = float(valeur)
+    except (TypeError, ValueError):
+        return valeur
+    if nombre == int(nombre):
+        return str(int(nombre))
+    return f"{nombre:.2f}".replace(".", ",")
+
+
+# Filtre Jinja réutilisable dans tous les templates : {{ p.prix | prix_fr }}.
+templates.env.filters["prix_fr"] = _prix_fr
+
+
 def rendre(request, nom_template, utilisateur=None, **contexte):
     """Rend un template en injectant `utilisateur` et `csrf_token`, et en
     posant (ou réutilisant) le cookie CSRF correspondant."""
