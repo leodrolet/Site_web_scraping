@@ -149,10 +149,29 @@ def recherche_lot(request: Request,
         return rendre(request, "app.html", utilisateur=utilisateur,
                       **_contexte_app(db, utilisateur))
 
-    contenu = fichier.file.read().decode("utf-8-sig", errors="replace")
+    # Bornes anti-abus : type, taille et nombre de lignes.
+    if not (fichier.filename or "").lower().endswith(".csv"):
+        return rendre(request, "app.html", utilisateur=utilisateur,
+                      **_contexte_app(db, utilisateur,
+                                      erreur="Merci de téléverser un fichier .csv."))
+
+    MAX_OCTETS = 1_000_000   # 1 Mo
+    MAX_LIGNES = 1000
+    brut = fichier.file.read(MAX_OCTETS + 1)
+    if len(brut) > MAX_OCTETS:
+        return rendre(request, "app.html", utilisateur=utilisateur,
+                      **_contexte_app(db, utilisateur,
+                                      erreur="Fichier trop volumineux (max 1 Mo)."))
+
+    contenu = brut.decode("utf-8-sig", errors="replace")
     lecteur = csv.DictReader(io.StringIO(contenu))
     lignes = [{(k or "").strip().lower(): (v or "").strip()
                for k, v in row.items()} for row in lecteur]
+
+    if len(lignes) > MAX_LIGNES:
+        return rendre(request, "app.html", utilisateur=utilisateur,
+                      **_contexte_app(db, utilisateur,
+                                      erreur=f"Fichier trop long (max {MAX_LIGNES} lignes)."))
 
     requises = {"entreprise", "departement", "region"}
     if not lignes or not requises.issubset(set(lignes[0].keys())):

@@ -18,10 +18,19 @@ from database import Utilisateur, get_db
 # ----------------------------------------------------------------------
 SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 if not SECRET_KEY:
+    # En production (Vercel ou COOKIE_SECURE), on refuse de démarrer sans clé :
+    # une clé aléatoire par instance/redémarrage casserait les sessions (et,
+    # en serverless multi-instances, empêcherait toute connexion stable).
+    _en_prod = bool(os.getenv("VERCEL")) or (
+        os.getenv("COOKIE_SECURE", "").strip().lower() in ("1", "true", "yes", "on"))
+    if _en_prod:
+        raise RuntimeError(
+            "SECRET_KEY manquante en production. Définis SECRET_KEY dans les "
+            "variables d'environnement (voir README) avant de déployer.")
     SECRET_KEY = secrets.token_hex(32)
-    print("⚠️  SECRET_KEY absente du .env : une clé temporaire a été générée. "
-          "Les sessions seront invalidées au redémarrage. "
-          "Ajoute une SECRET_KEY dans .env (voir README).")
+    print("⚠️  SECRET_KEY absente du .env : une clé temporaire a été générée "
+          "(développement uniquement). Les sessions seront invalidées au "
+          "redémarrage. Ajoute une SECRET_KEY dans .env (voir README).")
 
 DUREE_SESSION = 7 * 24 * 3600  # 7 jours, en secondes
 NOM_COOKIE_SESSION = "session"

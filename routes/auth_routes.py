@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from auth import (creer_session, detruire_session, hasher_mot_de_passe,
                  utilisateur_actuel, valider_csrf, verifier_mot_de_passe)
 from database import Utilisateur, get_db
+from ratelimit import trop_de_tentatives
 from templating import rendre
 
 router = APIRouter()
@@ -28,6 +29,11 @@ def soumettre_login(request: Request,
                    mot_de_passe: str = Form(...),
                    csrf_token: str = Form(""),
                    db: Session = Depends(get_db)):
+    # Anti-bruteforce : 5 tentatives / minute / IP.
+    if trop_de_tentatives(request, "login", limite=5, fenetre_s=60):
+        return rendre(request, "login.html", email=email.strip().lower(),
+                      erreur="Trop de tentatives. Réessayez dans une minute.")
+
     if not valider_csrf(request, csrf_token):
         return rendre(request, "login.html",
                       erreur="Session expirée, merci de réessayer.")
@@ -67,6 +73,10 @@ def soumettre_inscription(request: Request,
     def echec(message):
         return rendre(request, "inscription.html", erreur=message,
                       nom=nom, email=email)
+
+    # Anti-abus : 5 créations de compte / heure / IP (protège les quotas d'API).
+    if trop_de_tentatives(request, "inscription", limite=5, fenetre_s=3600):
+        return echec("Trop de tentatives. Réessayez plus tard.")
 
     if not valider_csrf(request, csrf_token):
         return echec("Session expirée, merci de réessayer.")

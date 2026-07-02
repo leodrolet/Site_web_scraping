@@ -24,6 +24,39 @@ from routes import (admin_routes, app_routes, auth_routes,  # noqa: E402
 
 app = FastAPI(title="Outil de prospection B2B")
 
+# En production (HTTPS : Vercel ou COOKIE_SECURE), on ajoute HSTS.
+_EN_PROD = bool(os.getenv("VERCEL")) or (
+    os.getenv("COOKIE_SECURE", "").strip().lower() in ("1", "true", "yes", "on"))
+
+# Politique de sécurité du contenu : autorise nos propres assets, les polices
+# Google (CSS + fichiers), le style inline (attributs style=") et les images
+# data: (flèche des <select>). Aucun script externe ni inline n'est autorisé.
+_CSP = (
+    "default-src 'self'; "
+    "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
+    "font-src https://fonts.gstatic.com; "
+    "script-src 'self'; "
+    "img-src 'self' data:; "
+    "form-action 'self'; frame-ancestors 'none'; base-uri 'self'"
+)
+
+
+@app.middleware("http")
+async def entetes_securite(request, call_next):
+    """Ajoute les en-têtes de sécurité à chaque réponse."""
+    reponse = await call_next(request)
+    reponse.headers.setdefault("X-Content-Type-Options", "nosniff")
+    reponse.headers.setdefault("X-Frame-Options", "DENY")
+    reponse.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    reponse.headers.setdefault("Permissions-Policy",
+                               "geolocation=(), microphone=(), camera=()")
+    reponse.headers.setdefault("Content-Security-Policy", _CSP)
+    if _EN_PROD:
+        reponse.headers.setdefault(
+            "Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return reponse
+
+
 # Crée les tables SQLite au démarrage (idempotent).
 init_db()
 
