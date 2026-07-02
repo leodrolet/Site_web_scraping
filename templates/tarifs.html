@@ -3,12 +3,12 @@
 
 {% block content %}
 <section class="bloc" id="tarifs">
-  <h2 class="titre-section">Tarifs</h2>
-  <p class="section-sous">Commencez gratuitement, avec vos propres clés API. Prix en CAD, par mois.</p>
+  <h2 class="titre-section">Un plan pour chaque rythme de prospection</h2>
+  <p class="section-sous">Commencez gratuitement. Prix en dollars canadiens, par mois.</p>
   <div class="grille-3 tarifs">
     {% for p in plans %}
       <div class="carte plan{% if p.populaire %} mise-avant{% endif %}">
-        {% if p.populaire %}<span class="ruban">Populaire</span>{% endif %}
+        {% if p.populaire %}<span class="ruban">Le plus choisi</span>{% endif %}
         <h3>{{ p.nom }}</h3>
         <p class="plan-prix">
           {% if p.prix == 0 %}<b>Gratuit</b>{% else %}<b>{{ p.prix }} $</b> <span>/ mois</span>{% endif %}

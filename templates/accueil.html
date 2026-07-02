@@ -4,90 +4,126 @@
 {% block content %}
 <section class="hero">
   <div class="hero-inner">
-    <span class="eyebrow">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3 16 9l6 3-6 3-3 6-3-6-6-3 6-3Z"/></svg>
-      Prospection B2B automatisée
-    </span>
-    <h1>Trouvez les bons contacts B2B <span class="grad">en quelques secondes</span></h1>
-    <p class="hero-sous">
-      Entrez un nom d'entreprise. Obtenez le bon contact marketing ou ventes
-      avec son courriel — prêt à utiliser.
-    </p>
-    <div class="hero-actions">
-      <a class="btn btn-lg" href="/login">
-        Essayer maintenant
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
-      <a class="btn-ghost btn-lg" href="#comment">Voir comment ça marche</a>
+    <div class="hero-texte">
+      <span class="eyebrow">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3 16 9l6 3-6 3-3 6-3-6-6-3 6-3Z"/></svg>
+        Prospection B2B
+      </span>
+      <h1>Le nom de l'entreprise suffit. <span class="grad">On trouve la bonne personne.</span></h1>
+      <p class="hero-sous">
+        Entrez une entreprise, choisissez marketing ou ventes, et récupérez le
+        contact exact — nom, titre, courriel, localisation — prêt à exporter en Excel.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-lg" href="/login">
+          Essayer maintenant
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn-ghost btn-lg" href="#comment">Voir comment ça marche</a>
+      </div>
+      <div class="hero-trust">
+        <span>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Sources vérifiées
+        </span>
+        <span>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Export Excel
+        </span>
+        <span>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Démarrage gratuit
+        </span>
+      </div>
     </div>
-    <div class="hero-trust">
-      <span>
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-        Sources vérifiées
-      </span>
-      <span>
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-        Export Excel
-      </span>
-      <span>
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-        Vos propres clés API
-      </span>
+
+    <!-- Élément signature : fiche « contact localisé » dans un cadre de visée.
+         Exemple illustratif du résultat renvoyé par l'outil. -->
+    <div class="hero-visuel">
+      <div class="fiche cadre">
+        <span class="coin-bg" aria-hidden="true"></span>
+        <div class="fiche-tete">
+          <span>Résultat · exemple</span>
+          <span class="fiche-statut"><span class="pt-signal"></span> Contact localisé</span>
+        </div>
+        <div class="fiche-identite">
+          <span class="fiche-avatar">CF</span>
+          <div>
+            <div class="fiche-nom">Camille Fortin</div>
+            <div class="fiche-titre">Directrice marketing · Atlas Média</div>
+          </div>
+        </div>
+        <div class="fiche-champ">
+          <span class="cle">Courriel</span>
+          <span class="val">camille.fortin@atlasmedia.ca</span>
+        </div>
+        <div class="fiche-champ">
+          <span class="cle">Localisation</span>
+          <span class="val">Montréal, QC · Canada</span>
+        </div>
+        <div class="fiche-champ">
+          <span class="cle">Confiance</span>
+          <span class="val jauge-confiance">
+            <span class="rail"><i style="width:96%"></i></span>
+            <b>96%</b>
+          </span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="bloc" id="comment">
-  <h2 class="titre-section">Comment ça marche</h2>
-  <p class="section-sous">Trois étapes, aucun logiciel à installer.</p>
+<section class="bloc reveal" id="comment">
+  <h2 class="titre-section">Trois étapes, aucun logiciel à installer</h2>
+  <p class="section-sous">Du nom de l'entreprise au fichier prêt à l'emploi.</p>
   <div class="grille-3">
     <div class="carte carte-hover etape">
       <span class="num">01</span>
       <div class="chip-ic">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
       </div>
-      <h3>Entrez le nom d'une entreprise</h3>
-      <p>Une recherche simple, ou tout un lot via un fichier CSV.</p>
+      <h3>Entrez une entreprise</h3>
+      <p>Une recherche à la fois, ou toute une liste via un fichier CSV.</p>
     </div>
     <div class="carte carte-hover etape">
       <span class="num">02</span>
       <div class="chip-ic">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
       </div>
-      <h3>Choisissez Marketing ou Ventes</h3>
-      <p>On cible le bon département dans la région voulue.</p>
+      <h3>Ciblez marketing ou ventes</h3>
+      <p>On vise le bon département, dans la région que vous choisissez.</p>
     </div>
     <div class="carte carte-hover etape">
       <span class="num">03</span>
       <div class="chip-ic">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
       </div>
-      <h3>Téléchargez votre fichier Excel</h3>
-      <p>Nom, titre, courriel et localisation, prêts à l'emploi.</p>
+      <h3>Exportez en Excel</h3>
+      <p>Nom, titre, courriel et localisation, prêts à contacter.</p>
     </div>
   </div>
 </section>
 
-<section class="bloc bloc-alt">
-  <h2 class="titre-section">Tout ce qu'il vous faut pour prospecter</h2>
-  <p class="section-sous">Une boîte à outils simple, construite sur des sources professionnelles.</p>
+<section class="bloc bloc-alt reveal">
+  <h2 class="titre-section">Tout ce qu'il faut pour prospecter</h2>
+  <p class="section-sous">Une boîte à outils simple, appuyée sur des sources professionnelles.</p>
   <ul class="liste-fonctions">
     <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Recherche par entreprise ou en lot (CSV)</li>
     <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Courriel professionnel du contact</li>
-    <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Localisation (ville, province, pays)</li>
+    <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Localisation : ville, province, pays</li>
+    <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Indice de confiance sur chaque courriel</li>
     <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Export Excel formaté</li>
-    <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Plusieurs sources de données professionnelles</li>
     <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Aucune configuration : prêt à l'emploi</li>
   </ul>
 </section>
 
-<section class="bloc" id="tarifs">
+<section class="bloc reveal" id="tarifs">
   <h2 class="titre-section">Tarifs</h2>
-  <p class="section-sous">Commencez gratuitement, avec vos propres clés API. Prix en CAD, par mois.</p>
+  <p class="section-sous">Commencez gratuitement. Prix en dollars canadiens, par mois.</p>
   <div class="grille-3 tarifs">
     {% for p in plans %}
       <div class="carte plan{% if p.populaire %} mise-avant{% endif %}">
-        {% if p.populaire %}<span class="ruban">Populaire</span>{% endif %}
+        {% if p.populaire %}<span class="ruban">Le plus choisi</span>{% endif %}
         <h3>{{ p.nom }}</h3>
         <p class="plan-prix">
           {% if p.prix == 0 %}<b>Gratuit</b>{% else %}<b>{{ p.prix }} $</b> <span>/ mois</span>{% endif %}
