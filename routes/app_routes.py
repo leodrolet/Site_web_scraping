@@ -312,9 +312,11 @@ def recherche_lot_flux(request: Request,
                     budget -= 1
                 k += 1
                 # Progression : jamais le nom d'un fournisseur, seulement l'état.
+                # dep/reg permettent au « Voir plus » de recibler cette entreprise.
                 yield json.dumps({
                     "type": "progress", "courante": k, "total": total,
                     "entreprise": ent, "trouve": _nb_trouves(contacts) > 0,
+                    "dep": dep, "reg": reg,
                 }, ensure_ascii=False) + "\n"
             db2.commit()
         finally:
@@ -326,6 +328,42 @@ def recherche_lot_flux(request: Request,
         }, ensure_ascii=False) + "\n"
 
     return StreamingResponse(flux(), media_type="application/x-ndjson")
+
+
+# ----------------------------------------------------------------------
+# « Voir plus de contacts » pour une entreprise déjà cherchée
+# ----------------------------------------------------------------------
+# Enrichissement À LA DEMANDE : ne consomme PAS de quota (pas de journalisation),
+# ne modifie pas plans.py. Renvoie la page suivante de contacts (offset) pour
+# UNE entreprise précise, triés par pertinence.
+@router.post("/app/plus-de-contacts")
+def plus_de_contacts(request: Request,
+                    entreprise: str = Form(...),
+                    departement: str = Form("Les deux"),
+                    region: str = Form("Toutes"),
+                    deja: int = Form(0),
+                    csrf_token: str = Form(""),
+                    utilisateur: Utilisateur = Depends(exiger_connexion)):
+    if not valider_csrf(request, csrf_token):
+        return JSONResponse({"erreur": "Session expirée, merci de réessayer."},
+                            status_code=400)
+
+    # Rang de départ borné : le front n'envoie que « deja=5 », on plafonne par sûreté.
+    try:
+        offset = max(0, min(int(deja), 20))
+    except (TypeError, ValueError):
+        offset = 5
+
+    try:
+        res = rechercher_entreprise(entreprise, departement, region,
+                                    limite=5, offset=offset)
+        contacts = res["contacts"]
+    except ErreurAPI as e:
+        print(f"[/app/plus-de-contacts] ErreurAPI : {e.message}", flush=True)
+        return JSONResponse({"erreur": MSG_SERVICE_INDISPO}, status_code=200)
+
+    # Aucune journalisation, aucun décompte de quota : pur enrichissement.
+    return JSONResponse({"contacts": contacts, "colonnes": COLONNES})
 
 
 # ----------------------------------------------------------------------

@@ -1,13 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Mon abonnement{% endblock %}
+{% block title %}Mon compte{% endblock %}
 
 {% block content %}
 <section class="app-wrap">
   <div class="app-tete">
-    <h1>Mon abonnement</h1>
-    <p class="muted">Votre plan et votre usage du mois en cours.</p>
+    <h1>Mon compte</h1>
+    <p class="muted">Votre profil, votre plan, et votre activité récente.</p>
   </div>
 
+  <!-- 1 · Identité -->
+  <div class="carte abo-identite">
+    <div class="abo-id-ligne">
+      <span class="muted">Courriel</span>
+      <strong>{{ utilisateur.email }}</strong>
+    </div>
+    <div class="abo-id-ligne">
+      <span class="muted">Membre depuis</span>
+      <strong>{{ membre_depuis }}</strong>
+    </div>
+  </div>
+
+  <!-- 2 · Plan &amp; usage -->
   <div class="carte abo-actuel">
     <div class="abo-actuel-tete">
       <div>
@@ -22,10 +35,60 @@
       <p class="abo-usage">Recherches <strong>illimitées</strong> ce mois-ci.</p>
     {% else %}
       <p class="abo-usage"><strong>{{ quota.utilisees }}</strong> / {{ quota.limite }} recherches utilisées ce mois — {{ quota.restantes }} restante(s).</p>
-      <div class="quota-bar"><span style="width: {{ quota.pourcentage }}%"></span></div>
+      <div class="quota-bar{% if quota.depasse %} pleine{% elif quota.pourcentage >= 80 %} presque{% endif %}"><span style="width: {{ quota.pourcentage }}%"></span></div>
+    {% endif %}
+    <p class="abo-reset muted">
+      <svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.4 2.6L3 8"/><path d="M3 3v5h5"/></svg>
+      {% if quota.illimite %}Sans limite mensuelle.{% else %}Quota réinitialisé le <strong>{{ date_reset }}</strong>.{% endif %}
+    </p>
+  </div>
+
+  <!-- 3 · Activité récente -->
+  <div class="carte historique" id="historique">
+    <div class="hist-tete">
+      <h2>Activité récente</h2>
+      <span class="muted">{{ hist_total }} recherche(s) sur les 3 derniers mois</span>
+    </div>
+    {% if historique %}
+      <div class="tableau-scroll">
+        <table class="table-hist">
+          <thead>
+            <tr><th>Entreprise</th><th>Département</th><th>Région</th><th>Date</th><th>Contacts</th></tr>
+          </thead>
+          <tbody>
+            {% for h in historique %}
+              <tr>
+                <td>{{ h.entreprise }}</td>
+                <td>{{ h.departement }}</td>
+                <td>{{ h.region }}</td>
+                <td class="hist-date">{{ h.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td><span class="pastille-mini">{{ h.nb_contacts_trouves }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if hist_pages > 1 %}
+        <div class="pagination">
+          {% if hist_page > 1 %}
+            <a class="btn-ghost" href="?page={{ hist_page - 1 }}#historique">← Précédent</a>
+          {% else %}
+            <span class="btn-ghost pagination-off">← Précédent</span>
+          {% endif %}
+          <span class="pagination-info muted">Page {{ hist_page }} / {{ hist_pages }}</span>
+          {% if hist_page < hist_pages %}
+            <a class="btn-ghost" href="?page={{ hist_page + 1 }}#historique">Suivant →</a>
+          {% else %}
+            <span class="btn-ghost pagination-off">Suivant →</span>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% else %}
+      <p class="muted" style="padding:1.1rem 1.3rem;">Aucune recherche sur les 3 derniers mois.</p>
     {% endif %}
   </div>
 
+  <!-- 4 · Comparer / changer de plan -->
   <h2 class="abo-titre">Changer de plan</h2>
   <div class="grille-3 tarifs">
     {% for p in plans %}
@@ -52,7 +115,7 @@
         {% else %}
           <a class="btn{% if not p.populaire %} btn-ghost{% endif %}"
              href="mailto:contact@prospectb2b.app?subject=Passer%20au%20plan%20{{ p.nom }}">
-            Passer à {{ p.nom }}
+            Nous écrire pour passer à {{ p.nom }}
           </a>
         {% endif %}
       </div>
@@ -60,9 +123,53 @@
   </div>
 
   <div class="alerte alerte-info" style="margin-top:24px;">
-    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
     <span>Le paiement en ligne n'est pas encore actif. Pour changer de plan, écrivez-nous à
       <a href="mailto:contact@prospectb2b.app">contact@prospectb2b.app</a> — nous l'activons manuellement.</span>
+  </div>
+
+  <!-- 5 · Sécurité -->
+  <div class="detail-grille" style="margin-top:2rem;">
+    <div class="carte" id="securite">
+      <h2 class="detail-titre">Mot de passe</h2>
+      {% if mdp_succes %}
+        <div class="alerte alerte-info">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <span>{{ mdp_succes }}</span>
+        </div>
+      {% endif %}
+      {% if mdp_erreur %}
+        <div class="alerte alerte-error">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+          <span>{{ mdp_erreur }}</span>
+        </div>
+      {% endif %}
+      <p class="muted">Changez votre mot de passe. Vous restez connecté.</p>
+      <form method="post" action="/abonnement/mot-de-passe">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="champ">
+          <label for="mot_de_passe_actuel">Mot de passe actuel</label>
+          <input type="password" id="mot_de_passe_actuel" name="mot_de_passe_actuel" required autocomplete="current-password">
+        </div>
+        <div class="champ">
+          <label for="nouveau">Nouveau mot de passe <span class="muted">(8 caractères min.)</span></label>
+          <input type="password" id="nouveau" name="nouveau" minlength="8" required autocomplete="new-password">
+        </div>
+        <div class="champ">
+          <label for="confirmation">Confirmer le nouveau mot de passe</label>
+          <input type="password" id="confirmation" name="confirmation" minlength="8" required autocomplete="new-password">
+        </div>
+        <button class="btn" type="submit">Mettre à jour le mot de passe</button>
+      </form>
+    </div>
+
+    <!-- 6 · Gestion du compte -->
+    <div class="carte">
+      <h2 class="detail-titre">Gestion du compte</h2>
+      <p class="muted">La suppression d'un compte est définitive et vérifiée manuellement pour votre sécurité — il n'y a pas de bouton automatique.</p>
+      <p class="muted">Pour supprimer votre compte et l'ensemble de vos données, écrivez-nous :</p>
+      <a class="btn-ghost" href="mailto:contact@prospectb2b.app?subject=Suppression%20de%20compte">Demander la suppression</a>
+    </div>
   </div>
 </section>
 {% endblock %}

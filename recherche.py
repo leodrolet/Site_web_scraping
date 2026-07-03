@@ -115,16 +115,55 @@ def _titre_pertinent(titre, departement):
     return any(mot in titre_bas for mot in FILTRES_DEPARTEMENT[departement]["titres"])
 
 
+# Rang de séniorité déduit du poste : plus le rôle est décisionnel, plus le rang
+# est élevé. Sert au tri de pertinence (un CMO passe avant un coordinateur).
+_RANGS_TITRE = [
+    (("chief", "cmo", "cso", "c-level", "cxo"), 5),
+    (("vp", "vice-président", "vice president", "vice-president", "svp"), 5),
+    (("director", "directeur", "directrice", "head of", "head,", "head ", "chef"), 4),
+    (("responsable", "manager", "gérant", "gerant", "lead", "principal"), 3),
+    (("marketing", "sales", "vente", "ventes", "growth", "brand",
+      "business development", "account"), 2),
+]
+
+
+def _rang_titre(titre):
+    t = (titre or "").lower()
+    for mots, rang in _RANGS_TITRE:
+        if any(m in t for m in mots):
+            return rang
+    return 1
+
+
+def _confiance_num(contact):
+    c = contact.get("Confiance (%)")
+    return c if isinstance(c, (int, float)) else 0
+
+
+def _trier_pertinence(contacts):
+    """Trie une liste de contacts du plus au moins pertinent.
+
+    Critère principal : séniorité du poste (rôle décisionnel d'abord) ; départage
+    par le score de confiance natif du fournisseur (Hunter) quand il existe.
+    """
+    return sorted(
+        contacts,
+        key=lambda c: (_rang_titre(c.get("Titre")), _confiance_num(c)),
+        reverse=True,
+    )
+
+
 # ----------------------------------------------------------------------
 # Étapes A / B — Hunter.io
 # ----------------------------------------------------------------------
-def _hunter_domain_search(entreprise, departement, region):
-    """Domain Search Hunter : tous les contacts filtrés (marketing/ventes).
+def _hunter_domain_search(entreprise, departement, region, besoin=5):
+    """Domain Search Hunter : contacts filtrés (marketing/ventes).
 
-    Renvoie jusqu'à `_HUNTER_LIMITE` contacts par page, paginé via `offset`
-    jusqu'à `_HUNTER_MAX_PAGES` pages. On s'arrête dès qu'une page n'est pas
-    pleine (plus de résultats). Les erreurs bloquantes (401/429) sur la
-    PREMIÈRE page se comportent comme avant ; sur une page suivante, on garde
+    Récupère au moins `besoin` contacts pertinents en paginant via `offset`
+    (jusqu'à `_HUNTER_MAX_PAGES` pages), puis s'arrête. Chaque page = 1 crédit
+    Hunter ; comme une page couvre déjà 100 courriels, `besoin` petit = 1 seul
+    appel dans l'immense majorité des cas. Les erreurs bloquantes (401/429) sur
+    la PREMIÈRE page se comportent comme avant ; sur une page suivante, on garde
     les contacts déjà obtenus au lieu de tout perdre.
     """
     if not config.HUNTER_API_KEY:
@@ -197,8 +236,8 @@ def _hunter_domain_search(entreprise, departement, region):
                 "Date de recherche": _aujourd_hui(),
             })
 
-        # Page incomplète -> plus rien à paginer.
-        if len(emails) < _HUNTER_LIMITE:
+        # Assez de contacts pour la tranche demandée, ou page incomplète.
+        if len(contacts) >= besoin or len(emails) < _HUNTER_LIMITE:
             break
 
     avertissements = []
@@ -215,8 +254,8 @@ def _hunter_domain_search(entreprise, departement, region):
 # ----------------------------------------------------------------------
 # Étape C — Apollo.io
 # ----------------------------------------------------------------------
-def _apollo_search(entreprise, departement, region):
-    """People Search Apollo : tous les contacts pertinents, paginé (max 5 pages)."""
+def _apollo_search(entreprise, departement, region, besoin=5):
+    """People Search Apollo : contacts pertinents, paginé (jusqu'à besoin, max 5 pages)."""
     if not config.APOLLO_API_KEY:
         return [], ["Apollo.io : clé API absente — étape ignorée."]
 
@@ -285,10 +324,10 @@ def _apollo_search(entreprise, departement, region):
                 "Date de recherche": _aujourd_hui(),
             })
 
-        # Fin de pagination : page incomplète ou dernière page annoncée.
+        # Fin de pagination : assez de contacts, page incomplète, ou dernière page.
         pagination = charge.get("pagination") or {}
         total_pages = pagination.get("total_pages")
-        if len(personnes) < _APOLLO_LIMITE:
+        if len(contacts) >= besoin or len(personnes) < _APOLLO_LIMITE:
             break
         if total_pages and page >= total_pages:
             break
@@ -348,19 +387,23 @@ def _serpapi_fallback(entreprise, departement):
 # ----------------------------------------------------------------------
 # Fonction publique
 # ----------------------------------------------------------------------
-def rechercher_entreprise(entreprise, departement="Les deux", region="Toutes"):
+def rechercher_entreprise(entreprise, departement="Les deux", region="Toutes",
+                         limite=5, offset=0):
     """
-    Recherche les contacts d'une entreprise.
+    Recherche les contacts d'une entreprise, triés par pertinence.
 
-    Retourne un dict : {"contacts": [...], "avertissements": [...]}.
-    `contacts` contient toujours au moins une ligne (une fiche « non trouvé »
-    si aucune piste).
+    `limite` : nombre max de contacts renvoyés (5 par défaut).
+    `offset` : rang de départ dans la liste triée — sert au « Voir plus »
+               (offset=5 renvoie les contacts 6 à 10, du MÊME fournisseur, la
+               chaîne de repli étant déterministe).
 
-    Résilience : si un fournisseur échoue (clé invalide, quota épuisé...), on
-    journalise le détail côté serveur (visible dans les logs Vercel) et on passe
-    au fournisseur suivant. `ErreurAPI` n'est levée QUE si **tous** les
-    fournisseurs tentés échouent (aucun n'a pu répondre) — dans ce cas seulement
-    l'utilisateur voit le message générique « Service temporairement indisponible ».
+    Retourne {"contacts": [...], "avertissements": [...]}. Pour offset=0, la
+    liste contient toujours au moins une ligne (fiche « non trouvé » sinon) ;
+    pour offset>0, elle peut être vide (plus rien à montrer).
+
+    Résilience et repli (Hunter -> Apollo -> SerpAPI) et gestion d'erreurs
+    bloquantes : identiques à avant. `ErreurAPI` n'est levée que si TOUS les
+    fournisseurs tentés échouent.
     """
     entreprise = (entreprise or "").strip()
     if not entreprise:
@@ -371,54 +414,67 @@ def rechercher_entreprise(entreprise, departement="Les deux", region="Toutes"):
     if region not in PAYS_PAR_REGION:
         region = "Toutes"
 
+    limite = max(1, min(limite, 25))
+    offset = max(0, offset)
+    besoin = offset + limite
+
+    def tranche(contacts):
+        return _trier_pertinence(contacts)[offset:offset + limite]
+
     avertissements = []
     erreurs = []          # ErreurAPI attrapées, par fournisseur
     un_fournisseur_a_repondu = False  # au moins un appel sans erreur bloquante
 
     # Étapes A / B — Hunter.io
     try:
-        contacts, av = _hunter_domain_search(entreprise, departement, region)
+        contacts, av = _hunter_domain_search(entreprise, departement, region, besoin)
         un_fournisseur_a_repondu = True
         avertissements += av
         if contacts:
-            return {"contacts": contacts, "avertissements": avertissements}
+            return {"contacts": tranche(contacts), "avertissements": avertissements}
     except ErreurAPI as e:
         print(f"[recherche] Hunter.io indisponible : {e.message}", flush=True)
         erreurs.append(e)
 
     # Étape C — Apollo.io
     try:
-        contacts, av = _apollo_search(entreprise, departement, region)
+        contacts, av = _apollo_search(entreprise, departement, region, besoin)
         un_fournisseur_a_repondu = True
         avertissements += av
         if contacts:
-            return {"contacts": contacts, "avertissements": avertissements}
+            return {"contacts": tranche(contacts), "avertissements": avertissements}
     except ErreurAPI as e:
         print(f"[recherche] Apollo.io indisponible : {e.message}", flush=True)
         erreurs.append(e)
 
-    # Étape D — SerpAPI (repli Google)
-    try:
-        lien, note = _serpapi_fallback(entreprise, departement)
-        un_fournisseur_a_repondu = True
-        if note:
-            avertissements.append(note)
-        if lien:
-            fiche = _fiche_vide(
-                entreprise,
-                "Piste LinkedIn — vérification manuelle requise",
-                source=lien,
-            )
-            return {"contacts": [fiche], "avertissements": avertissements}
-    except ErreurAPI as e:
-        print(f"[recherche] SerpAPI indisponible : {e.message}", flush=True)
-        erreurs.append(e)
+    # Étape D — SerpAPI (repli Google) : une seule piste LinkedIn, jamais paginée.
+    # Sans objet pour un « Voir plus » (offset>0) -> on ne la renvoie qu'au 1er appel.
+    if offset == 0:
+        try:
+            lien, note = _serpapi_fallback(entreprise, departement)
+            un_fournisseur_a_repondu = True
+            if note:
+                avertissements.append(note)
+            if lien:
+                fiche = _fiche_vide(
+                    entreprise,
+                    "Piste LinkedIn — vérification manuelle requise",
+                    source=lien,
+                )
+                return {"contacts": [fiche], "avertissements": avertissements}
+        except ErreurAPI as e:
+            print(f"[recherche] SerpAPI indisponible : {e.message}", flush=True)
+            erreurs.append(e)
 
     # Tous les fournisseurs tentés ont échoué en erreur bloquante : on remonte.
     if erreurs and not un_fournisseur_a_repondu:
         raise ErreurAPI(
             "Tous les fournisseurs de données sont indisponibles : "
             + " | ".join(e.message for e in erreurs))
+
+    # « Voir plus » sans résultat supplémentaire -> liste vide (pas de fiche).
+    if offset > 0:
+        return {"contacts": [], "avertissements": avertissements}
 
     # Aucune piste (mais au moins un fournisseur a répondu normalement).
     fiche = _fiche_vide(entreprise, "Non trouvé — vérification manuelle requise")

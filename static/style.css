@@ -657,6 +657,96 @@ tbody tr:hover td { background: #FAFBFE; }
 .table-resultats tbody td.cell-entreprise { box-shadow: inset 3px 0 0 var(--cobalt-pale); }
 .table-resultats tbody tr.groupe-debut td.cell-entreprise { box-shadow: inset 3px 0 0 var(--cobalt); }
 
+/* lignes cliquables (délégation) */
+.table-resultats tbody tr { cursor: pointer; }
+.table-resultats tbody tr:focus-visible { outline: 2px solid var(--cobalt); outline-offset: -2px; }
+
+/* « Voir plus de contacts » : ligne d'action après un groupe de 5 */
+.table-resultats tbody tr.ligne-plus { cursor: default; }
+.table-resultats tbody tr.ligne-plus td { padding: 0; border-top: 0; background: var(--brume); }
+.btn-plus {
+  display: block; width: 100%;
+  font-family: var(--f-corps); font-size: .86rem; font-weight: 600;
+  color: var(--cobalt-profond); background: transparent;
+  border: 0; border-bottom: 1px solid var(--ligne);
+  padding: .7rem 1rem; text-align: left; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.btn-plus::before { content: "＋ "; font-weight: 700; }
+.btn-plus:hover { background: var(--cobalt-pale); color: var(--cobalt); }
+.btn-plus:disabled { opacity: .6; cursor: default; }
+
+/* ------------------------------------------------ État vide (accueil) --- */
+.etat-vide {
+  text-align: center; padding: 3.5rem 1.5rem;
+  background: var(--surface); border: 1px solid var(--ligne);
+  border-radius: var(--r-lg); box-shadow: var(--ombre-1);
+}
+.etat-vide-ic {
+  display: inline-grid; place-items: center; width: 56px; height: 56px;
+  border-radius: 16px; background: var(--cobalt-pale); color: var(--cobalt);
+  border: 1px solid #DCE4FD; margin-bottom: 1rem;
+}
+.etat-vide-ic svg { width: 26px; height: 26px; }
+.etat-vide-titre { font-family: var(--f-titre); font-weight: 600; font-size: 1.15rem; margin: 0 0 .3rem; }
+.etat-vide-texte { color: var(--ardoise); max-width: 44ch; margin: 0 auto; }
+
+/* ---------------------------------------------- Squelette de chargement --- */
+.chargement {
+  background: var(--surface); border: 1px solid var(--ligne);
+  border-radius: var(--r-lg); box-shadow: var(--ombre-1); padding: 1.5rem;
+}
+.chargement-msg { text-align: center; color: var(--ardoise); font-size: .95rem; margin: 0 0 1.3rem; }
+.sk-table { display: flex; flex-direction: column; gap: 1rem; }
+.sk-ligne { display: flex; gap: 1.4rem; align-items: center; }
+.sk {
+  height: 12px; border-radius: 6px; display: inline-block;
+  background: linear-gradient(90deg, var(--ligne) 25%, #EEF1F7 37%, var(--ligne) 63%);
+  background-size: 400% 100%; animation: sk-pulse 1.4s ease infinite;
+}
+@keyframes sk-pulse { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+/* ------------------------------------------- Apparition en cascade --- */
+.table-resultats tbody tr.cascade { opacity: 0; transform: translateY(6px); transition: opacity .34s ease, transform .34s ease; }
+.table-resultats tbody tr.cascade.cascade-vu { opacity: 1; transform: none; }
+
+/* --------------------------------------------------- Message de valeur --- */
+.valeur-msg {
+  display: flex; align-items: center; gap: .55rem; margin: 0;
+  padding: .7rem 1.3rem; border-bottom: 1px solid var(--ligne);
+  background: var(--ok-pale); color: #0F5132; font-size: .9rem;
+}
+.valeur-msg .ic-sm { color: var(--ok); flex: none; }
+.valeur-msg strong { font-family: var(--f-mono); }
+
+/* --------------------------------------------------------------- Toasts --- */
+.toasts {
+  position: fixed; bottom: 1.1rem; right: 1.1rem; z-index: 200;
+  display: flex; flex-direction: column; gap: .6rem;
+  max-width: min(92vw, 360px);
+}
+.toast {
+  background: var(--encre); color: #fff;
+  font-size: .9rem; font-weight: 500;
+  padding: .7rem 1rem; border-radius: var(--r);
+  box-shadow: var(--ombre-3);
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .28s var(--pas), transform .28s var(--pas);
+}
+.toast.visible { opacity: 1; transform: none; }
+.toast-error { background: var(--erreur); }
+.toast-ok { background: var(--ok); }
+
+/* copie réussie */
+.btn.btn-ok, .btn.btn-ok:hover { background: var(--ok); }
+
+/* mouvement réduit : pas de pulsation ni de cascade */
+@media (prefers-reduced-motion: reduce) {
+  .sk { animation: none; }
+  .table-resultats tbody tr.cascade { opacity: 1; transform: none; transition: none; }
+  .toast { transition: opacity .001ms; }
+}
+
 /* ------------------------------------------------------- Abonnement --- */
 .abo-actuel { margin-bottom: 2.2rem; }
 .abo-actuel-tete {
@@ -670,6 +760,26 @@ tbody tr:hover td { background: #FAFBFE; }
 .abo-usage { color: var(--ardoise); margin-bottom: .8rem; }
 .abo-usage strong { color: var(--encre); font-family: var(--f-mono); }
 .abo-titre { font-size: 1.3rem; margin: 0 0 1.2rem; }
+
+/* identité du compte */
+.abo-identite { margin-bottom: 1.4rem; display: grid; gap: .9rem; }
+.abo-id-ligne { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.abo-id-ligne .muted { font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; font-family: var(--f-mono); }
+.abo-id-ligne strong { font-size: .98rem; word-break: break-word; }
+
+/* ligne « quota réinitialisé le … » */
+.abo-reset { display: flex; align-items: center; gap: .45rem; margin: 1rem 0 0; font-size: .88rem; }
+.abo-reset .ic-sm { color: var(--ardoise-clair); flex: none; }
+.abo-reset strong { color: var(--encre); font-family: var(--f-mono); }
+
+/* barre de quota : couleur graduée (comme l'outil) */
+.quota-bar.presque > span { background: linear-gradient(90deg, var(--ambre), #C9770F); }
+
+/* pagination du relevé d'activité */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 1rem 1.3rem; border-top: 1px solid var(--ligne); }
+.pagination .btn-ghost { --h: 38px; padding: 0 .9rem; font-size: .88rem; }
+.pagination-info { font-family: var(--f-mono); font-size: .85rem; }
+.pagination-off { opacity: .45; pointer-events: none; }
 
 /* -------------------------------------------------------------- Admin --- */
 .stat-carte .stat-etiq {
