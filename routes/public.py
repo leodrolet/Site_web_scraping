@@ -35,3 +35,9 @@ def tarifs(request: Request, db: Session = Depends(get_db)):
 def confidentialite(request: Request, db: Session = Depends(get_db)):
     utilisateur = utilisateur_actuel(request, db)
     return rendre(request, "confidentialite.html", utilisateur=utilisateur)
+
+
+@router.get("/mentions-legales")
+def mentions_legales(request: Request, db: Session = Depends(get_db)):
+    utilisateur = utilisateur_actuel(request, db)
+    return rendre(request, "mentions-legales.html", utilisateur=utilisateur)

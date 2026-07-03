@@ -447,6 +447,44 @@ svg.ic-sm { width: 16px; height: 16px; flex: none; }
 .form-tete h1 { font-size: 1.6rem; }
 .form-tete p { color: var(--ardoise); margin: 0; }
 .lien-bas { text-align: center; margin: 1.3rem 0 0; color: var(--ardoise); font-size: .93rem; }
+.confirmation-texte { color: var(--ardoise); text-align: center; margin: 0 0 1.3rem; }
+.confirmation-texte strong { color: var(--encre); }
+
+/* case de consentement (inscription) */
+.champ-consent {
+  display: flex; align-items: flex-start; gap: .6rem;
+  margin: 0 0 1.1rem; font-size: .88rem; color: var(--ardoise); cursor: pointer;
+}
+.champ-consent input { margin-top: .2rem; width: 16px; height: 16px; flex: none; accent-color: var(--cobalt); }
+.champ-consent a { text-decoration: underline; }
+
+/* séparateur discret dans une carte */
+.sep-carte { border: 0; border-top: 1px solid var(--ligne); margin: 1.2rem 0; }
+
+/* bandeau témoins */
+.bandeau-cookies {
+  position: fixed; left: 1rem; right: 1rem; bottom: 1rem; z-index: 150;
+  max-width: 720px; margin: 0 auto;
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  background: var(--encre); color: #E4E9F2;
+  padding: .9rem 1.1rem; border-radius: var(--r); box-shadow: var(--ombre-3);
+}
+.bandeau-cookies[hidden] { display: none; }
+.bandeau-cookies p { margin: 0; font-size: .88rem; flex: 1; min-width: 220px; }
+.bandeau-cookies strong { color: #fff; }
+.bandeau-cookies a { color: #9DB2FF; text-decoration: underline; }
+.bandeau-cookies .btn { --h: 38px; padding: 0 1rem; font-size: .88rem; white-space: nowrap; }
+@media (max-width: 640px) { .bandeau-cookies .btn { width: 100%; } }
+
+/* badge de confirmation d'email (panneau admin) */
+.badge-conf {
+  display: inline-block; margin-top: .25rem;
+  font-family: var(--f-mono); font-size: .66rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .03em;
+  padding: .1rem .45rem; border-radius: 5px; border: 1px solid;
+}
+.badge-conf.ok { color: var(--ok); background: var(--ok-pale); border-color: #C7E8D3; }
+.badge-conf.attente { color: #8A5A12; background: var(--ambre-pale); border-color: #F0D3A6; }
 
 /* --------------------------------------------------------------- Champs --- */
 .champ { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1.05rem; }

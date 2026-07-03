@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Mentions légales{% endblock %}
+
+{% block content %}
+<section class="app-wrap etroit prose">
+  <h1>Mentions légales</h1>
+  <p class="muted">Dernière mise à jour : {{ maj or '2026' }}</p>
+
+  <h2>Éditeur du site</h2>
+  <ul>
+    <li><strong>Nom / raison sociale :</strong> [À COMPLÉTER]</li>
+    <li><strong>Adresse :</strong> [À COMPLÉTER]</li>
+    <li><strong>Courriel :</strong> <a href="mailto:contact@prospectb2b.app">contact@prospectb2b.app</a></li>
+  </ul>
+
+  <h2>Responsable de la protection des renseignements personnels</h2>
+  <p>[À COMPLÉTER : nom] — <a href="mailto:contact@prospectb2b.app">contact@prospectb2b.app</a>.
+     Voir aussi la <a href="/confidentialite">politique de confidentialité</a>.</p>
+
+  <h2>Hébergement</h2>
+  <p>Le site est hébergé sur une infrastructure infonuagique (Vercel) et la base
+     de données sur un service géré (Neon/PostgreSQL). Certaines données peuvent
+     être traitées hors du Québec — voir la
+     <a href="/confidentialite">politique de confidentialité</a>.</p>
+
+  <h2>Propriété intellectuelle</h2>
+  <p>Le contenu du site (textes, interface, logo) est la propriété de l'éditeur,
+     sauf mention contraire.</p>
+
+  <h2>Responsabilité d'usage</h2>
+  <p>Les coordonnées professionnelles fournies par l'outil sont destinées à une
+     prospection commerciale conforme aux lois applicables (dont la Loi 25 et la
+     Loi canadienne anti-pourriel). L'utilisateur est seul responsable de l'usage
+     qu'il en fait.</p>
+
+  <h2>Contact</h2>
+  <p>Pour toute question : <a href="mailto:contact@prospectb2b.app">contact@prospectb2b.app</a>.</p>
+</section>
+{% endblock %}

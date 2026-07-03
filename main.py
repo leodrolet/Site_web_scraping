@@ -17,7 +17,8 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-from auth import RedirectionConnexion, RedirectionNonAutorise  # noqa: E402
+from auth import (RedirectionConfirmation, RedirectionConnexion,  # noqa: E402
+                  RedirectionNonAutorise)
 from database import init_db  # noqa: E402
 from routes import (admin_routes, app_routes, auth_routes,  # noqa: E402
                     plan_routes, public)
@@ -74,6 +75,12 @@ async def _rediriger_vers_login(request, exc):
 async def _rediriger_vers_app(request, exc):
     """Quand un non-admin appelle une route /admin -> retour à l'outil."""
     return RedirectResponse("/app", status_code=303)
+
+
+@app.exception_handler(RedirectionConfirmation)
+async def _rediriger_vers_confirmation(request, exc):
+    """Utilisateur connecté mais email non confirmé -> page d'attente."""
+    return RedirectResponse("/confirmation-requise", status_code=303)
 
 
 app.include_router(public.router)

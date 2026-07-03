@@ -13,7 +13,15 @@ import os
 # Délai maximal (en secondes) par requête réseau — utilisé par recherche.py.
 TIMEOUT = 10
 
-_NOMS_CLES = ("HUNTER_API_KEY", "APOLLO_API_KEY", "SERPAPI_KEY")
+# Interrupteur : exiger la confirmation d'email avant l'accès à l'outil.
+# Désactivé par défaut. À passer à « true » UNIQUEMENT une fois un domaine
+# vérifié chez Resend (sinon les vrais utilisateurs ne reçoivent pas leur
+# courriel et restent bloqués). Voir .env.example.
+EXIGER_CONFIRMATION_EMAIL = (
+    os.getenv("EXIGER_CONFIRMATION_EMAIL", "false").strip().lower() == "true")
+
+_NOMS_CLES = ("HUNTER_API_KEY", "APOLLO_API_KEY", "SERPAPI_KEY",
+              "RESEND_API_KEY", "RESEND_FROM_EMAIL")
 
 
 def statut_apis():
@@ -25,6 +33,8 @@ def statut_apis():
         "Hunter.io": bool((os.getenv("HUNTER_API_KEY") or "").strip()),
         "Apollo.io": bool((os.getenv("APOLLO_API_KEY") or "").strip()),
         "SerpAPI": bool((os.getenv("SERPAPI_KEY") or "").strip()),
+        "Resend (courriels)": bool((os.getenv("RESEND_API_KEY") or "").strip()
+                                   and (os.getenv("RESEND_FROM_EMAIL") or "").strip()),
     }
 
 

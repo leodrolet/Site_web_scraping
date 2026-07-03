@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from math import ceil
 
 from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 import plans
@@ -76,6 +77,43 @@ def page_abonnement(request: Request,
                     db: Session = Depends(get_db)):
     return rendre(request, "abonnement.html", utilisateur=utilisateur,
                   **_contexte_abonnement(db, utilisateur, page=page))
+
+
+@router.get("/mes-donnees")
+def exporter_mes_donnees(request: Request,
+                        utilisateur: Utilisateur = Depends(exiger_connexion),
+                        db: Session = Depends(get_db)):
+    """Droit d'accès + portabilité (Loi 25) : export JSON structuré des
+    renseignements personnels de l'utilisateur (profil + historique)."""
+    historique = (db.query(HistoriqueRecherche)
+                  .filter(HistoriqueRecherche.utilisateur_id == utilisateur.id)
+                  .order_by(HistoriqueRecherche.date.desc()).all())
+    donnees = {
+        "export_le": datetime.utcnow().isoformat() + "Z",
+        "compte": {
+            "courriel": utilisateur.email,
+            "nom": utilisateur.nom,
+            "membre_depuis": (utilisateur.date_creation.isoformat()
+                              if utilisateur.date_creation else None),
+            "plan": utilisateur.plan,
+            "email_confirme": bool(getattr(utilisateur, "email_confirme", True)),
+        },
+        "recherches": [
+            {
+                "entreprise": h.entreprise,
+                "departement": h.departement,
+                "region": h.region,
+                "nb_contacts_trouves": h.nb_contacts_trouves,
+                "date": h.date.isoformat() if h.date else None,
+            }
+            for h in historique
+        ],
+    }
+    nom = f"mes-donnees-prospectb2b_{datetime.utcnow().strftime('%Y-%m-%d')}.json"
+    return JSONResponse(
+        donnees,
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'},
+    )
 
 
 @router.post("/abonnement/mot-de-passe")

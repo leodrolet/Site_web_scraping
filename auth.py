@@ -46,6 +46,42 @@ COOKIE_SECURE = (
 
 _serializer = URLSafeTimedSerializer(SECRET_KEY, salt="session-utilisateur")
 
+# Jetons de confirmation d'email : même SECRET_KEY, mais un SALT DIFFÉRENT de
+# celui des sessions -> un jeton de confirmation ne peut jamais servir de session
+# (et inversement). Ne contient QUE l'email, expire après 48h.
+DUREE_CONFIRMATION = 48 * 3600
+_serializer_confirmation = URLSafeTimedSerializer(SECRET_KEY, salt="confirmation-email")
+
+
+def generer_jeton_confirmation(email: str) -> str:
+    return _serializer_confirmation.dumps(email)
+
+
+def verifier_jeton_confirmation(jeton: str, max_age: int = DUREE_CONFIRMATION):
+    """Retourne l'email si le jeton est valide et non expiré, sinon None."""
+    try:
+        return _serializer_confirmation.loads(jeton, max_age=max_age)
+    except (BadSignature, SignatureExpired):
+        return None
+
+
+# Jetons de réinitialisation de mot de passe : SALT encore différent (jamais
+# interchangeable avec session ni confirmation) et expiration COURTE (1h), car
+# plus sensible.
+DUREE_RESET = 3600
+_serializer_reset = URLSafeTimedSerializer(SECRET_KEY, salt="reset-mot-de-passe")
+
+
+def generer_jeton_reset(email: str) -> str:
+    return _serializer_reset.dumps(email)
+
+
+def verifier_jeton_reset(jeton: str, max_age: int = DUREE_RESET):
+    try:
+        return _serializer_reset.loads(jeton, max_age=max_age)
+    except (BadSignature, SignatureExpired):
+        return None
+
 
 # ----------------------------------------------------------------------
 # Mots de passe
@@ -94,28 +130,60 @@ def utilisateur_actuel(request: Request, db: Session = Depends(get_db)):
 
 
 class RedirectionConnexion(Exception):
-    """Levée par exiger_connexion quand l'utilisateur n'est pas connecté."""
+    """Levée quand l'utilisateur n'est pas connecté (-> /login)."""
 
 
-def exiger_connexion(request: Request,
-                    db: Session = Depends(get_db)) -> Utilisateur:
-    """Dépendance : impose la connexion, sinon redirige vers /login."""
+class RedirectionConfirmation(Exception):
+    """Levée quand l'utilisateur est connecté mais n'a pas confirmé son email
+    (-> /confirmation-requise)."""
+
+
+def _confirmation_requise() -> bool:
+    """Interrupteur (env) : la confirmation d'email bloque-t-elle l'accès ?
+    Lu à chaque appel pour refléter la config sans redémarrage forcé."""
+    return os.getenv("EXIGER_CONFIRMATION_EMAIL", "false").strip().lower() == "true"
+
+
+def exiger_connexion_simple(request: Request,
+                           db: Session = Depends(get_db)) -> Utilisateur:
+    """Impose seulement d'être connecté (SANS exiger l'email confirmé).
+
+    Utilisée par les pages de confirmation elles-mêmes (/confirmation-requise,
+    /renvoyer-confirmation), où l'utilisateur est justement non confirmé.
+    """
     utilisateur = utilisateur_actuel(request, db)
     if utilisateur is None:
         raise RedirectionConnexion()
     return utilisateur
 
 
+def exiger_connexion(request: Request,
+                    db: Session = Depends(get_db)) -> Utilisateur:
+    """Dépendance : connexion + email confirmé.
+
+    Non connecté            -> /login.
+    Connecté, email NON confirmé -> /confirmation-requise.
+    `getattr(..., True)` : si la colonne manque, on ne bloque pas (sécurité des
+    comptes existants).
+    """
+    utilisateur = exiger_connexion_simple(request, db)
+    if _confirmation_requise() and not getattr(utilisateur, "email_confirme", True):
+        raise RedirectionConfirmation()
+    return utilisateur
+
+
 def exiger_admin(request: Request,
                 db: Session = Depends(get_db)) -> Utilisateur:
-    """Dépendance : impose un compte administrateur (admin=True).
+    """Dépendance : impose un compte administrateur (admin=True), email confirmé.
 
-    Non connecté  -> redirection /login (comme exiger_connexion).
-    Connecté mais non-admin -> redirection /app (pas d'accès au panneau).
+    Non connecté -> /login ; email non confirmé -> /confirmation-requise ;
+    connecté non-admin -> /app.
     """
     utilisateur = utilisateur_actuel(request, db)
     if utilisateur is None:
         raise RedirectionConnexion()
+    if _confirmation_requise() and not getattr(utilisateur, "email_confirme", True):
+        raise RedirectionConfirmation()
     if not getattr(utilisateur, "admin", False):
         raise RedirectionNonAutorise()
     return utilisateur

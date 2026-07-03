@@ -91,6 +91,12 @@
               {% else %}
                 <span class="etat-inactif">Désactivé</span>
               {% endif %}
+              <br>
+              {% if l.u.email_confirme %}
+                <span class="badge-conf ok">Confirmé</span>
+              {% else %}
+                <span class="badge-conf attente">En attente</span>
+              {% endif %}
             </td>
             <td>
               <div class="actions-compte">

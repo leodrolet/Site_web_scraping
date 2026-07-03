@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Confirme ton adresse{% endblock %}
+
+{% block content %}
+<section class="bloc centre-page">
+  <div class="carte carte-form">
+    <div class="form-tete">
+      <div class="chip-ic">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+      </div>
+      <h1>Confirme ton adresse courriel</h1>
+      <p>Une dernière étape avant de commencer à utiliser ProspectB2B.</p>
+    </div>
+
+    {% if erreur %}
+      <div class="alerte alerte-error">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        <span>{{ erreur }}</span>
+      </div>
+    {% endif %}
+    {% if envoi_echec %}
+      <div class="alerte alerte-warn">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <span>Ton compte est créé, mais l'envoi du courriel a échoué. Utilise le bouton ci-dessous pour en redemander un.</span>
+      </div>
+    {% endif %}
+    {% if renvoi == 'ok' %}
+      <div class="alerte alerte-info">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>Nouveau courriel envoyé. Pense à vérifier tes indésirables.</span>
+      </div>
+    {% elif renvoi == 'trop-tot' %}
+      <div class="alerte alerte-warn">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Patiente un instant avant de redemander un courriel.</span>
+      </div>
+    {% elif renvoi == 'echec' %}
+      <div class="alerte alerte-error">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        <span>L'envoi a échoué. Réessaie dans un instant.</span>
+      </div>
+    {% endif %}
+
+    {% if utilisateur %}
+      <p class="confirmation-texte">
+        On t'a envoyé un lien de confirmation à
+        <strong>{{ email }}</strong>. Clique-le pour activer ton compte.
+        Le lien expire dans <strong>48 heures</strong>.
+      </p>
+
+      <form method="post" action="/renvoyer-confirmation">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-bloc" type="submit" data-cooldown="{{ cooldown }}">
+          <span class="btn-libelle">Renvoyer le courriel</span>
+        </button>
+      </form>
+
+      <p class="lien-bas">
+        Mauvaise adresse ? <a href="/logout">Se déconnecter</a> et recréer un compte.
+      </p>
+    {% else %}
+      <p class="confirmation-texte">
+        Pour renvoyer un courriel de confirmation, connecte-toi d'abord à ton compte.
+      </p>
+      <a class="btn btn-bloc" href="/login">Se connecter</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

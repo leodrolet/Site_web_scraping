@@ -54,6 +54,17 @@ class Utilisateur(Base):
     # Plan d'abonnement : "gratuit" | "pro" | "business" (voir plans.py).
     plan = Column(String, nullable=False, default="gratuit",
                   server_default="gratuit")
+    # Adresse courriel confirmée. server_default TRUE : les comptes déjà en base
+    # restent utilisables sans re-confirmation. L'inscription force False (voir
+    # auth_routes) pour n'imposer la confirmation qu'aux nouveaux comptes.
+    email_confirme = Column(Boolean, nullable=False, default=True,
+                            server_default=text("true"))
+    # Réinitialisation de mot de passe : horodatage du dernier envoi (limite 60s).
+    dernier_envoi_reset = Column(DateTime, nullable=True)
+    # Anti-bruteforce login (état en BASE, compatible serverless).
+    tentatives_echouees = Column(Integer, nullable=False, default=0,
+                                 server_default="0")
+    verrouille_jusqu_a = Column(DateTime, nullable=True)
 
     historique = relationship("HistoriqueRecherche", back_populates="utilisateur",
                              cascade="all, delete-orphan")
@@ -78,6 +89,13 @@ class HistoriqueRecherche(Base):
 _COLONNES_AJOUTEES = {
     "plan": "VARCHAR DEFAULT 'gratuit'",
     "admin": "BOOLEAN DEFAULT 0",
+    # TRUE par défaut : les comptes existants ne sont pas bloqués au déploiement.
+    # « TRUE » (et non « 1 ») pour être valide à la fois sur PostgreSQL et SQLite.
+    "email_confirme": "BOOLEAN DEFAULT TRUE",
+    # Réinitialisation de mot de passe + anti-bruteforce (état en base).
+    "dernier_envoi_reset": "TIMESTAMP",
+    "tentatives_echouees": "INTEGER DEFAULT 0",
+    "verrouille_jusqu_a": "TIMESTAMP",
 }
 
 

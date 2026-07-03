@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Mot de passe oublié{% endblock %}
+
+{% block content %}
+<section class="bloc centre-page">
+  <div class="carte carte-form">
+    <div class="form-tete">
+      <div class="chip-ic">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+      </div>
+      <h1>Mot de passe oublié</h1>
+      <p>Entre ton courriel : on t'enverra un lien pour en choisir un nouveau.</p>
+    </div>
+
+    {% if message %}
+      <div class="alerte alerte-info">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>{{ message }}</span>
+      </div>
+    {% endif %}
+    {% if erreur %}
+      <div class="alerte alerte-error">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+        {{ erreur }}
+      </div>
+    {% endif %}
+
+    {% if not message %}
+      <form method="post" action="/mot-de-passe-oublie">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="champ">
+          <label for="email">Courriel</label>
+          <div class="input-wrap">
+            <svg class="input-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input type="email" id="email" name="email" required autofocus placeholder="vous@entreprise.com">
+          </div>
+        </div>
+        <button class="btn btn-bloc" type="submit">Envoyer le lien</button>
+      </form>
+    {% endif %}
+
+    <p class="lien-bas"><a href="/login">Retour à la connexion</a></p>
+  </div>
+</section>
+{% endblock %}

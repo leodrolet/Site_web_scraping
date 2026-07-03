@@ -4,35 +4,118 @@
 {% block content %}
 <section class="app-wrap etroit prose">
   <h1>Politique de confidentialité</h1>
-  <p class="muted">Dernière mise à jour : 2026</p>
+  <p class="muted">Dernière mise à jour : {{ maj or '2026' }}</p>
 
-  <h2>Données que nous collectons</h2>
+  <p>ProspectB2B (« nous ») protège les renseignements personnels conformément à
+     la <strong>Loi 25</strong> (Loi modernisant des dispositions législatives en
+     matière de protection des renseignements personnels, Québec). Cette page
+     explique quels renseignements nous traitons, pourquoi, et vos droits.</p>
+
+  <h2>1. Responsable de la protection des renseignements personnels</h2>
+  <p>Conformément à la Loi 25, une personne est responsable de la protection des
+     renseignements personnels au sein de l'organisation :</p>
   <ul>
-    <li>Votre adresse courriel et, si vous le souhaitez, votre nom.</li>
-    <li>Votre mot de passe, stocké uniquement sous forme de hash (bcrypt) —
-        jamais en clair.</li>
-    <li>L'historique de vos recherches (nom d'entreprise, département, région,
-        nombre de contacts trouvés).</li>
+    <li><strong>Responsable :</strong> [À COMPLÉTER : nom de la personne]</li>
+    <li><strong>Courriel :</strong> <a href="mailto:contact@prospectb2b.app">contact@prospectb2b.app</a></li>
   </ul>
 
-  <h2>Utilisation des données</h2>
-  <p>
-    Les recherches sont exécutées par notre service au moyen de nos propres
-    accès aux fournisseurs de données. Nous ne partageons ni ne vendons vos
-    données à des tiers.
-  </p>
+  <h2>2. Renseignements des utilisateurs (comptes)</h2>
+  <ul>
+    <li>Adresse courriel et, si vous le fournissez, votre nom.</li>
+    <li>Mot de passe, stocké uniquement sous forme de hachage (bcrypt) — jamais en clair.</li>
+    <li>Historique de vos recherches : nom d'entreprise, département, région,
+        nombre de contacts trouvés, date.</li>
+    <li>Données techniques minimales (journaux serveur) nécessaires à la sécurité
+        et au bon fonctionnement du service.</li>
+  </ul>
 
-  <h2>Vos droits</h2>
-  <p>
-    Pour supprimer votre compte et l'ensemble de vos données, contactez-nous à
-    <a href="mailto:contact@prospectb2b.app">contact@prospectb2b.app</a>.
-  </p>
+  <h2>3. Renseignements des contacts recherchés</h2>
+  <p>L'outil renvoie des coordonnées professionnelles (nom, titre, courriel
+     professionnel, localisation) de personnes travaillant dans les entreprises
+     que vous recherchez, à partir de sources de données professionnelles. Ces
+     renseignements sont fournis à des fins de prospection commerciale B2B.</p>
+  <p>Toute personne concernée peut demander de ne plus figurer dans les résultats
+     ou d'accéder aux renseignements la concernant en écrivant à
+     <a href="mailto:contact@prospectb2b.app">contact@prospectb2b.app</a>. En tant
+     qu'utilisateur, vous êtes responsable d'utiliser ces coordonnées dans le
+     respect des lois applicables (dont la Loi&nbsp;25 et la Loi canadienne
+     anti-pourriel).</p>
 
-  <h2>Sécurité</h2>
-  <p>
-    Les mots de passe sont hachés avec bcrypt et les sessions protégées par des
-    cookies signés expirant après 7 jours. Les formulaires sont protégés contre
-    la falsification de requête (CSRF).
-  </p>
+  <h2>4. Finalités du traitement</h2>
+  <ul>
+    <li>Créer et gérer votre compte, vous authentifier.</li>
+    <li>Fournir l'outil de recherche de contacts et l'export Excel.</li>
+    <li>Décompter votre usage mensuel selon votre plan.</li>
+    <li>Vous envoyer les courriels nécessaires au service (confirmation d'adresse).</li>
+    <li>Assurer la sécurité et prévenir les abus.</li>
+  </ul>
+
+  <h2>5. Consentement</h2>
+  <p>La création d'un compte requiert votre consentement explicite à cette
+     politique (case à cocher à l'inscription). Vous pouvez retirer votre
+     consentement à tout moment en demandant la suppression de votre compte
+     (voir « Vos droits »).</p>
+
+  <h2>6. Durées de conservation</h2>
+  <ul>
+    <li>Données de compte : conservées tant que le compte est actif.</li>
+    <li>Historique des recherches : conservé tant que le compte est actif.</li>
+    <li>Après suppression du compte : effacement des données personnelles associées,
+        sous réserve des obligations légales de conservation applicables.</li>
+  </ul>
+
+  <h2>7. Témoins (cookies)</h2>
+  <p>Le site utilise <strong>uniquement des témoins essentiels</strong> :</p>
+  <ul>
+    <li>Un témoin de session (vous garder connecté).</li>
+    <li>Un témoin de sécurité anti-CSRF.</li>
+  </ul>
+  <p>Aucun témoin de pistage, de publicité ou d'analyse tierce n'est utilisé.
+     Ces témoins essentiels sont nécessaires au fonctionnement et ne requièrent
+     pas de consentement distinct.</p>
+
+  <h2>8. Partage et sous-traitants</h2>
+  <p>Nous ne vendons pas vos renseignements. Nous faisons appel à des
+     fournisseurs qui traitent des données pour notre compte :</p>
+  <ul>
+    <li>Hébergement de l'application et de la base de données.</li>
+    <li>Envoi des courriels transactionnels.</li>
+    <li>Fournisseurs de données professionnelles pour les recherches.</li>
+  </ul>
+  <p>Certains de ces fournisseurs peuvent traiter des données <strong>hors du
+     Québec</strong>. [À COMPLÉTER : préciser les fournisseurs et pays si requis
+     après évaluation des facteurs relatifs à la vie privée.]</p>
+
+  <h2>9. Vos droits</h2>
+  <p>Conformément à la Loi 25, vous pouvez :</p>
+  <ul>
+    <li><strong>Accéder</strong> à vos renseignements et les obtenir dans un format
+        technologique structuré (<strong>portabilité</strong>) — depuis
+        « Mon compte » &rarr; « Télécharger mes données », ou sur demande.</li>
+    <li><strong>Rectifier</strong> votre nom, courriel et mot de passe depuis
+        « Mon compte ».</li>
+    <li>Demander la <strong>suppression</strong> de votre compte et de vos données.</li>
+    <li><strong>Retirer votre consentement</strong> au traitement.</li>
+  </ul>
+  <p>Pour toute demande : <a href="mailto:contact@prospectb2b.app">contact@prospectb2b.app</a>.
+     Si vous êtes insatisfait de notre réponse, vous pouvez porter plainte auprès
+     de la <a href="https://www.cai.gouv.qc.ca" target="_blank" rel="noopener">Commission
+     d'accès à l'information du Québec (CAI)</a>.</p>
+
+  <h2>10. Incidents de confidentialité</h2>
+  <p>En cas d'incident présentant un risque de préjudice sérieux, nous prenons les
+     mesures raisonnables pour en réduire les effets, tenons un registre des
+     incidents et avisons les personnes concernées ainsi que la CAI lorsque la
+     loi l'exige.</p>
+
+  <h2>11. Sécurité</h2>
+  <p>Les mots de passe sont hachés avec bcrypt. Les sessions sont protégées par
+     des témoins signés et « HttpOnly », expirant après 7 jours. Les formulaires
+     sont protégés contre la falsification de requête (CSRF). Les clés d'accès aux
+     services sont conservées côté serveur uniquement.</p>
+
+  <h2>12. Modifications</h2>
+  <p>Nous pouvons mettre à jour cette politique. La date de dernière mise à jour
+     figure en haut de cette page.</p>
 </section>
 {% endblock %}

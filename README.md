@@ -118,7 +118,20 @@ Variables d'environnement à définir en production (jamais committer `.env`) :
 | `SECRET_KEY` | Signe les sessions. Obligatoire. |
 | `DATABASE_URL` | Connexion Neon/PostgreSQL. **Obligatoire en prod** (sinon SQLite `/tmp` éphémère sur Vercel = comptes perdus à chaque déploiement). |
 | `HUNTER_API_KEY` / `APOLLO_API_KEY` / `SERPAPI_KEY` | Clés du service, côté serveur. Au moins Hunter.io. |
+| `RESEND_API_KEY` | Clé API [Resend](https://resend.com) pour l'envoi des courriels de confirmation d'adresse. |
+| `RESEND_FROM_EMAIL` | Adresse expéditrice (ex. `noreply@tondomaine.com`), sur un **domaine vérifié chez Resend**. |
 | `COOKIE_SECURE` | `true` pour n'envoyer les cookies qu'en HTTPS. Auto-activé sur Vercel. |
+
+> **Confirmation d'email (Resend).** Les nouveaux comptes doivent confirmer leur
+> adresse avant d'accéder à l'outil. Étapes préalables côté Resend : (1) créer un
+> compte, (2) **vérifier un domaine d'envoi** — sans domaine vérifié, le mode bac
+> à sable n'autorise l'envoi qu'à ta propre adresse via `onboarding@resend.dev`,
+> pas aux vrais utilisateurs — (3) générer une clé API. Renseigne ensuite
+> `RESEND_API_KEY` et `RESEND_FROM_EMAIL`. Si ces variables sont absentes, la
+> création de compte fonctionne quand même (aucun courriel envoyé, l'utilisateur
+> voit un message d'échec + un bouton « Renvoyer »). Les comptes **déjà en base**
+> avant cet ajout restent utilisables sans re-confirmation (`email_confirme` vaut
+> `TRUE` par défaut au niveau de la colonne).
 
 - Sers le site en **HTTPS**. Les cookies passent en `secure` automatiquement
   quand `COOKIE_SECURE=true` (ou sur Vercel) — plus rien à modifier dans le code.

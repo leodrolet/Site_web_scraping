@@ -9,6 +9,25 @@
   "use strict";
 
   // ----------------------------------------------------------------
+  // Bandeau témoins (informatif — témoins essentiels uniquement)
+  // ----------------------------------------------------------------
+  (function () {
+    var bandeau = document.getElementById("bandeau-cookies");
+    if (!bandeau) { return; }
+    var vu = false;
+    try { vu = localStorage.getItem("cookies-vus") === "1"; } catch (e) { vu = false; }
+    if (vu) { return; }
+    bandeau.hidden = false;
+    var ok = document.getElementById("cookies-ok");
+    if (ok) {
+      ok.addEventListener("click", function () {
+        bandeau.hidden = true;
+        try { localStorage.setItem("cookies-vus", "1"); } catch (e) { /* ignore */ }
+      });
+    }
+  })();
+
+  // ----------------------------------------------------------------
   // Révélations douces au scroll (respecte prefers-reduced-motion)
   // ----------------------------------------------------------------
   (function () {
@@ -167,6 +186,25 @@
       a.blur();
     }
   });
+
+  // ----------------------------------------------------------------
+  // Bouton « Renvoyer le courriel » : décompte de 60 s (page confirmation)
+  // ----------------------------------------------------------------
+  (function () {
+    var btn = document.querySelector("button[data-cooldown]");
+    if (!btn) { return; }
+    var restant = parseInt(btn.dataset.cooldown, 10) || 0;
+    if (restant <= 0) { return; }
+    var libelle = btn.querySelector(".btn-libelle") || btn;
+    var base = libelle.textContent;
+    btn.disabled = true;
+    (function tic() {
+      if (restant <= 0) { btn.disabled = false; libelle.textContent = base; return; }
+      libelle.textContent = base + " (" + restant + " s)";
+      restant -= 1;
+      setTimeout(tic, 1000);
+    })();
+  })();
 
   // ----------------------------------------------------------------
   // Progression au submit (recherche simple uniquement : data-loading)
