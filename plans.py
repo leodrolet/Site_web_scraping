@@ -14,6 +14,7 @@ from datetime import datetime
 from database import HistoriqueRecherche
 
 # Ordre d'affichage = ordre d'insertion. `limite=None` -> illimité.
+# `prix=None` -> prix pas encore choisi (seul le plan gratuit a un prix connu).
 PLANS = {
     "gratuit": {
         "cle": "gratuit", "nom": "Gratuit", "prix": 0, "limite": 25,
@@ -25,7 +26,7 @@ PLANS = {
         ],
     },
     "pro": {
-        "cle": "pro", "nom": "Pro", "prix": 54.99, "limite": 500,
+        "cle": "pro", "nom": "Pro", "prix": None, "limite": 500,
         "populaire": True,
         "fonctions": [
             "500 recherches / mois",
@@ -35,7 +36,7 @@ PLANS = {
         ],
     },
     "business": {
-        "cle": "business", "nom": "Business", "prix": 99.99, "limite": None,
+        "cle": "business", "nom": "Business", "prix": None, "limite": None,
         "fonctions": [
             "Recherches illimitées",
             "Recherche simple et en lot (CSV)",

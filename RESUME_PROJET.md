@@ -13,7 +13,7 @@
 > **supprimées**. Seul l'admin voit le statut des APIs (`/admin`).
 
 > ✅ **État par rapport au cahier des charges**
-> - ✅ **3 plans d'abonnement : CODÉS.** Gratuit 0 $ (25 rech./mois), Pro 29 $ (500), Business 79 $ (illimité). CAD, dans `plans.py`.
+> - ✅ **3 plans d'abonnement : CODÉS.** Gratuit (25 rech./mois), Pro (500), Business (illimité). Prix des plans payants pas encore choisis, dans `plans.py`.
 > - ✅ **Limite + blocage de quota : CODÉS.** Décompte mensuel réel, blocage à la limite (front **et** back).
 > - ✅ **Panneau admin : CODÉ.** Stats, activation/désactivation de comptes, changement de plan, statut des APIs. (`/admin`)
 > - ✅ **Clés API côté serveur : CODÉ.** Plus aucune clé côté utilisateur ni en base.
@@ -121,13 +121,13 @@
 
 ## 3. Les trois plans d'abonnement
 
-**✅ Les 3 plans sont définis et appliqués par le code** (`plans.py`), avec un vrai décompte des recherches et un blocage au quota. Prix en **CAD, par mois**.
+**✅ Les 3 plans sont définis et appliqués par le code** (`plans.py`), avec un vrai décompte des recherches et un blocage au quota. **Les prix des plans payants n'ont pas encore été choisis** (le site affiche « Prix à venir »).
 
 | Plan | Prix / mois | Recherches incluses | Fonctionnalités | Blocage à la limite |
 |---|---|---|---|---|
-| **Gratuit** | 0 $ | **25 / mois** | Recherche simple, export Excel | Recherche bloquée dès 25/25 ce mois-ci |
-| **Pro** | 29 $ | **500 / mois** | Recherche simple **et en lot (CSV)**, export Excel | Recherche bloquée dès 500/500 ce mois-ci |
-| **Business** | 79 $ | **Illimité** | Tout Pro + support prioritaire | Jamais bloqué |
+| **Gratuit** | Gratuit | **25 / mois** | Recherche simple, export Excel | Recherche bloquée dès 25/25 ce mois-ci |
+| **Pro** | À déterminer | **500 / mois** | Recherche simple **et en lot (CSV)**, export Excel | Recherche bloquée dès 500/500 ce mois-ci |
+| **Business** | À déterminer | **Illimité** | Tout Pro + support prioritaire | Jamais bloqué |
 
 **Règles de décompte (codées dans `plans.py`) :**
 - **1 entreprise recherchée = 1 recherche décomptée.** En recherche en lot, chaque ligne du CSV compte pour 1.
@@ -348,12 +348,12 @@ Hunter.io  →  (rien ?)  →  Apollo.io  →  (rien ?)  →  SerpAPI  →  (rie
 
 ## 11. Modèle d'affaires
 
-**⚠️ Le code définit les prix des plans mais aucune donnée de coût ni de profit.**
+**⚠️ Les prix des plans payants n'ont pas encore été choisis.**
 
-### Prix présents dans le code (`plans.py`)
-- **Gratuit :** 0 $ / mois — 25 recherches.
-- **Pro :** 29 $ / mois — 500 recherches.
-- **Business :** 79 $ / mois — illimité.
+### Plans présents dans le code (`plans.py`)
+- **Gratuit :** gratuit — 25 recherches / mois.
+- **Pro :** prix à déterminer — 500 recherches / mois.
+- **Business :** prix à déterminer — illimité.
 - Le paiement n'est pas implémenté : l'attribution de plan est manuelle (panneau admin).
 
 ### Estimation des coûts mensuels
