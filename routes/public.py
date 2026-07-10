@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-import plans
 from auth import utilisateur_actuel
 from database import get_db
 from templating import rendre
@@ -20,15 +19,13 @@ def accueil(request: Request, db: Session = Depends(get_db)):
     # anonyme voit la page de présentation.
     if utilisateur is not None:
         return RedirectResponse("/app", status_code=303)
-    return rendre(request, "accueil.html", utilisateur=utilisateur,
-                  plans=plans.liste_plans())
+    return rendre(request, "accueil.html", utilisateur=utilisateur)
 
 
 @router.get("/tarifs")
-def tarifs(request: Request, db: Session = Depends(get_db)):
-    utilisateur = utilisateur_actuel(request, db)
-    return rendre(request, "tarifs.html", utilisateur=utilisateur,
-                  plans=plans.liste_plans())
+def tarifs():
+    # Les plans ne sont plus affichés : l'ancienne page renvoie vers l'accueil.
+    return RedirectResponse("/#tarifs", status_code=301)
 
 
 @router.get("/confidentialite")

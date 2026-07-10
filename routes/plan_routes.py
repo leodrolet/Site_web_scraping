@@ -1,9 +1,10 @@
 """
 plan_routes.py — Page « Mon compte » (/abonnement).
 
-Regroupe : identité du compte, plan et usage du mois (avec date de
-réinitialisation), relevé d'activité paginé, comparaison des plans, et
-changement de mot de passe (utilisateur déjà connecté — pas d'envoi d'email).
+Regroupe : identité du compte, usage du mois (avec date de réinitialisation),
+relevé d'activité paginé, et changement de mot de passe (utilisateur déjà
+connecté — pas d'envoi d'email). Les plans ne sont plus affichés sur le site ;
+ils servent uniquement de quotas côté serveur (voir plans.py).
 """
 
 from datetime import datetime, timedelta
@@ -57,8 +58,6 @@ def _contexte_abonnement(db, utilisateur, page=1, **extra):
 
     ctx = dict(
         quota=etat,
-        plans=plans.liste_plans(),
-        plan_actuel=etat["plan"]["cle"],
         membre_depuis=_mois_annee_fr(utilisateur.date_creation) if utilisateur.date_creation else "—",
         date_reset=_jour_mois_fr(_debut_mois_suivant()),
         historique=lignes,

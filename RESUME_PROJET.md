@@ -13,7 +13,7 @@
 > **supprimées**. Seul l'admin voit le statut des APIs (`/admin`).
 
 > ✅ **État par rapport au cahier des charges**
-> - ✅ **3 plans d'abonnement : CODÉS.** Gratuit (25 rech./mois), Pro (500), Business (illimité). Prix des plans payants pas encore choisis, dans `plans.py`.
+> - ✅ **3 plans d'abonnement : CODÉS.** Gratuit (25 rech./mois), Pro (500), Business (illimité). Prix pas encore choisis ; les plans ne sont **plus affichés sur le site** (quotas serveur uniquement, gérés via l'admin), dans `plans.py`.
 > - ✅ **Limite + blocage de quota : CODÉS.** Décompte mensuel réel, blocage à la limite (front **et** back).
 > - ✅ **Panneau admin : CODÉ.** Stats, activation/désactivation de comptes, changement de plan, statut des APIs. (`/admin`)
 > - ✅ **Clés API côté serveur : CODÉ.** Plus aucune clé côté utilisateur ni en base.
@@ -121,7 +121,7 @@
 
 ## 3. Les trois plans d'abonnement
 
-**✅ Les 3 plans sont définis et appliqués par le code** (`plans.py`), avec un vrai décompte des recherches et un blocage au quota. **Les prix des plans payants n'ont pas encore été choisis** (le site affiche « Prix à venir »).
+**✅ Les 3 plans sont définis et appliqués par le code** (`plans.py`), avec un vrai décompte des recherches et un blocage au quota. **Les prix n'ont pas encore été choisis et les plans ne sont plus affichés sur le site** : ils servent de quotas côté serveur, assignés via le panneau admin. Le site précise aussi qu'**aucune clé API n'est à fournir** (clés serveur dans `.env`).
 
 | Plan | Prix / mois | Recherches incluses | Fonctionnalités | Blocage à la limite |
 |---|---|---|---|---|

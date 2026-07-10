@@ -22,7 +22,7 @@ PLANS = {
             "25 recherches / mois",
             "Recherche simple",
             "Export Excel",
-            "Vos propres clés API",
+            "Aucune clé API à fournir",
         ],
     },
     "pro": {
@@ -32,7 +32,7 @@ PLANS = {
             "500 recherches / mois",
             "Recherche simple et en lot (CSV)",
             "Export Excel",
-            "Vos propres clés API",
+            "Aucune clé API à fournir",
         ],
     },
     "business": {

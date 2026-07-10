@@ -14,7 +14,7 @@
       <div class="quota-tete">
         <span class="quota-plan">
           <svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
-          Plan {{ quota.plan.nom }}
+          Votre usage
         </span>
         {% if quota.illimite %}
           <span class="quota-compte"><span class="badge-illimite">Recherches illimitées</span></span>
@@ -32,7 +32,7 @@
   {% if bloque_quota %}
     <div class="alerte alerte-warn">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
-      <span>Limite atteinte : votre plan {{ quota.plan.nom }} inclut {{ quota.limite }} recherches par mois. <a href="/abonnement">Passez à un plan supérieur</a> pour continuer, ou revenez le mois prochain.</span>
+      <span>Limite atteinte : votre compte inclut {{ quota.limite }} recherches par mois. <a href="mailto:contact@prospectb2b.app">Écrivez-nous</a> pour augmenter votre limite, ou revenez le mois prochain.</span>
     </div>
   {% endif %}
 
