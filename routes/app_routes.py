@@ -97,6 +97,7 @@ def _contexte_app(db, utilisateur, **extra):
     etat = plans.etat_quota(db, utilisateur)
     contexte = dict(_BASE)
     contexte.update(quota=etat, bloque_quota=etat["depasse"],
+                    contacts_mois=plans.contacts_ce_mois(db, utilisateur.id),
                     historique=_historique_recent(db, utilisateur))
     contexte.update(extra)
     return contexte

@@ -72,6 +72,16 @@ def recherches_ce_mois(db, utilisateur_id):
     ).count()
 
 
+def contacts_ce_mois(db, utilisateur_id):
+    """Total de contacts trouvés ce mois-ci (affichage motivant, pas un quota)."""
+    from sqlalchemy import func
+    total = (db.query(func.sum(HistoriqueRecherche.nb_contacts_trouves))
+             .filter(HistoriqueRecherche.utilisateur_id == utilisateur_id,
+                     HistoriqueRecherche.date >= _debut_du_mois())
+             .scalar())
+    return int(total or 0)
+
+
 def etat_quota(db, utilisateur):
     """
     État du quota du mois pour un utilisateur.

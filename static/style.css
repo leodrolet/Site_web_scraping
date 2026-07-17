@@ -746,6 +746,77 @@ input[type="file"]::file-selector-button {
   .ring-arc { animation: none; stroke-dasharray: 94 125.7; }
 }
 
+/* ------------------------------------------------ Page outil : raffinage --- */
+/* mini-stat motivante dans la bannière d'usage */
+.quota-stat {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .2rem .65rem; border-radius: var(--r-pill);
+  background: var(--ok-pale); color: #15803D; font-size: .84rem;
+}
+.quota-stat .ic-sm { width: 14px; height: 14px; }
+.quota-stat strong { font-family: var(--f-mono); }
+
+/* astuce sous le champ entreprise */
+.champ-astuce { font-size: .8rem; color: var(--ardoise-clair); }
+.champ-astuce code {
+  font-family: var(--f-mono); font-size: .78rem;
+  background: var(--brume); padding: .05rem .3rem; border-radius: 4px;
+}
+
+/* badges de département */
+.badge-dep {
+  display: inline-block; padding: .14rem .55rem; border-radius: var(--r-pill);
+  font-size: .78rem; font-weight: 600; white-space: nowrap;
+  background: var(--brume); color: var(--ardoise);
+}
+.badge-dep.dep-marketing { background: var(--cobalt-pale); color: var(--cobalt-profond); }
+.badge-dep.dep-ventes { background: var(--ok-pale); color: #15803D; }
+.badge-dep.dep-direction { background: #F3EEFE; color: #6D28D9; }
+.badge-dep.dep-autre { background: var(--ambre-pale); color: #92600F; }
+
+/* jauge de confiance dans la cellule */
+.cell-confiance { white-space: nowrap; }
+.cell-confiance b { font-family: var(--f-mono); font-weight: 600; }
+.rail-conf {
+  display: inline-block; vertical-align: middle; margin-left: .5rem;
+  width: 44px; height: 5px; border-radius: var(--r-pill);
+  background: var(--ligne); overflow: hidden;
+}
+.rail-conf i {
+  display: block; height: 100%; border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--cobalt), var(--ok));
+}
+
+/* copie du courriel en 1 clic (visible au survol de la ligne) */
+.cell-courriel { white-space: nowrap; }
+.cell-courriel .btn-copie {
+  display: inline-grid; place-items: center; vertical-align: middle;
+  width: 24px; height: 24px; margin-left: .4rem; padding: 0;
+  border: 0; border-radius: 6px; background: transparent; cursor: pointer;
+  color: var(--ardoise-clair); opacity: 0; transition: opacity .15s ease, background .15s ease;
+}
+.cell-courriel .btn-copie svg { width: 14px; height: 14px; }
+tbody tr:hover .btn-copie, .btn-copie:focus-visible { opacity: 1; }
+.btn-copie:hover { background: var(--cobalt-pale); color: var(--cobalt-profond); }
+
+/* lien source (piste LinkedIn) cliquable */
+.lien-source { color: var(--cobalt-profond); text-decoration: underline; word-break: break-all; }
+
+/* mobile : blocs plus compacts, boutons pleine largeur */
+@media (max-width: 640px) {
+  .app-wrap { padding: 1.6rem .9rem 3rem; }
+  .quota-tete { gap: .55rem; }
+  .quota-lien { margin-left: auto; }
+  .hist-tete { flex-direction: column; align-items: flex-start; gap: .2rem; }
+  .table-hist td, .table-hist th { padding: .55rem .8rem; }
+  .panneau form > .btn, #onglet-lot .btn { width: 100%; justify-content: center; }
+  .resultats-tete { flex-direction: column; align-items: flex-start; gap: .7rem; }
+  .resultats-tete form, .resultats-tete .btn { width: 100%; }
+  .resultats-outils { flex-direction: column; align-items: stretch; gap: .4rem; }
+  .resultats-hint { display: none; }
+  .cell-courriel .btn-copie { opacity: 1; }  /* pas de survol au doigt */
+}
+
 .tableau-scroll { overflow-x: auto; }
 table {
   width: 100%; border-collapse: collapse; font-size: .88rem;
@@ -1047,6 +1118,9 @@ tbody tr:hover td { background: #FAFBFE; }
   background: var(--cobalt-pale); color: var(--cobalt-profond);
   font-family: var(--f-mono); font-size: .78rem; font-weight: 600;
 }
+/* historique : succès (contacts trouvés) vs recherche vide, d'un coup d'œil */
+.pastille-mini.mini-ok { background: var(--ok-pale); color: #15803D; }
+.pastille-mini.mini-zero { background: var(--brume); color: var(--ardoise-clair); }
 .btn-relancer { --h: 34px; padding: 0 .7rem; font-size: .84rem; white-space: nowrap; }
 .btn-relancer .ic { width: 15px; height: 15px; }
 

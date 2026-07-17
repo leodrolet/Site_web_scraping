@@ -21,6 +21,12 @@
         {% else %}
           <span class="quota-compte"><strong>{{ quota.utilisees }}</strong> / {{ quota.limite }} recherches ce mois</span>
         {% endif %}
+        {% if contacts_mois is defined and contacts_mois > 0 %}
+          <span class="quota-stat">
+            <svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/></svg>
+            <strong>{{ contacts_mois }}</strong>&nbsp;contact{{ 's' if contacts_mois > 1 else '' }} trouvé{{ 's' if contacts_mois > 1 else '' }} ce mois
+          </span>
+        {% endif %}
         <a class="quota-lien" href="/abonnement">Gérer&nbsp;→</a>
       </div>
       {% if not quota.illimite %}
@@ -66,7 +72,7 @@
                 <td>{{ h.region }}</td>
                 {# Stocké en UTC ; converti en heure locale par app.js (data-utc). #}
                 <td class="hist-date" data-utc="{{ h.date.strftime('%Y-%m-%dT%H:%M:%S') }}Z">{{ h.date.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td><span class="pastille-mini">{{ h.nb_contacts_trouves }}</span></td>
+                <td><span class="pastille-mini {{ 'mini-ok' if h.nb_contacts_trouves > 0 else 'mini-zero' }}">{{ h.nb_contacts_trouves }}</span></td>
                 <td>
                   <button type="button" class="btn-ghost btn-relancer"
                           data-entreprise="{{ h.entreprise }}"
@@ -106,6 +112,7 @@
           <label for="entreprise">Nom de l'entreprise</label>
           <input type="text" id="entreprise" name="entreprise" placeholder="Ex : Bell Canada"
                  value="{{ entreprise or '' }}" required>
+          <span class="champ-astuce">Astuce : tapez un domaine (ex.&nbsp;<code>bell.ca</code>) pour viser exactement le bon site.</span>
         </div>
         <div class="champ">
           <label for="departement">Département cible</label>
@@ -199,10 +206,19 @@
                 {% set nouveau = ent != ns.prev %}
                 <tr tabindex="0" data-entreprise="{{ ent }}" data-departement="{{ departement or 'Les deux' }}" data-region="{{ region or 'Toutes' }}"{% if nouveau and not loop.first %} class="groupe-debut"{% endif %}>
                   {% for c in colonnes %}
+                    {% set v = ligne.get(c, '') %}
                     {% if loop.first %}
-                      <td class="cell-entreprise">{% if nouveau %}{{ ligne.get(c, '') }}{% endif %}</td>
+                      <td class="cell-entreprise">{% if nouveau %}{{ v }}{% endif %}</td>
+                    {% elif c == 'Département' and v %}
+                      <td><span class="badge-dep {{ {'Marketing': 'dep-marketing', 'Ventes': 'dep-ventes', 'Direction': 'dep-direction'}.get(v, 'dep-autre') }}">{{ v }}</span></td>
+                    {% elif c == 'Confiance (%)' and v != '' %}
+                      <td class="cell-confiance"><b>{{ v }}</b><span class="rail-conf" aria-hidden="true"><i style="width: {{ v }}%"></i></span></td>
+                    {% elif c == 'Courriel' and v %}
+                      <td class="cell-courriel"><span>{{ v }}</span><button type="button" class="btn-copie" data-courriel="{{ v }}" title="Copier le courriel" aria-label="Copier le courriel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></td>
+                    {% elif c == 'Source' and v is string and v.startswith('http') %}
+                      <td><a class="lien-source" href="{{ v }}" target="_blank" rel="noopener">{{ v }}</a></td>
                     {% else %}
-                      <td>{{ ligne.get(c, '') }}</td>
+                      <td>{{ v }}</td>
                     {% endif %}
                   {% endfor %}
                 </tr>

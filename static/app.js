@@ -322,6 +322,22 @@
       corps.appendChild(dt);
       corps.appendChild(dd);
     });
+    // Piste LinkedIn dans les valeurs -> bouton d'ouverture directe.
+    var linkedin = "";
+    paires.forEach(function (p) {
+      if (!linkedin && /^https?:\/\/[^ ]*linkedin\.com/.test(p.valeur || "")) {
+        linkedin = p.valeur;
+      }
+    });
+    if (linkedin) {
+      var lien = document.createElement("a");
+      lien.className = "btn btn-ghost";
+      lien.href = linkedin;
+      lien.target = "_blank";
+      lien.rel = "noopener";
+      lien.textContent = "Voir sur LinkedIn";
+      actions.appendChild(lien);
+    }
     if (courriel) {
       var btn = document.createElement("button");
       btn.type = "button";
@@ -380,6 +396,42 @@
     return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, "-").replace(/\//g, "_");
   }
 
+  var ICONE_COPIE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<rect x="9" y="9" width="13" height="13" rx="2"/>' +
+    '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  var CLASSES_DEP = { "Marketing": "dep-marketing", "Ventes": "dep-ventes",
+                      "Direction": "dep-direction" };
+
+  // Rendu d'une cellule enrichie — miroir exact du template serveur (app.html).
+  function cellule(colonne, valeur) {
+    var v = valeur != null ? String(valeur) : "";
+    if (!v) { return "<td></td>"; }
+    if (colonne === "Département") {
+      return '<td><span class="badge-dep ' + (CLASSES_DEP[v] || "dep-autre") + '">' +
+        echapper(v) + "</span></td>";
+    }
+    if (colonne === "Confiance (%)") {
+      var pct = parseFloat(v);
+      if (!isNaN(pct)) {
+        return '<td class="cell-confiance"><b>' + echapper(v) + "</b>" +
+          '<span class="rail-conf" aria-hidden="true"><i style="width:' +
+          Math.max(0, Math.min(100, pct)) + '%"></i></span></td>';
+      }
+    }
+    if (colonne === "Courriel") {
+      return '<td class="cell-courriel"><span>' + echapper(v) + "</span>" +
+        '<button type="button" class="btn-copie" data-courriel="' + echapper(v) +
+        '" title="Copier le courriel" aria-label="Copier le courriel">' +
+        ICONE_COPIE + "</button></td>";
+    }
+    if (colonne === "Source" && /^https?:\/\//.test(v)) {
+      return '<td><a class="lien-source" href="' + echapper(v) +
+        '" target="_blank" rel="noopener">' + echapper(v) + "</a></td>";
+    }
+    return "<td>" + echapper(v) + "</td>";
+  }
+
   // Construit une <tr> de contact (mêmes attributs que le rendu serveur).
   function construireLigne(colonnes, ligne, dep, reg) {
     var ent = ligne["Entreprise"] != null ? ligne["Entreprise"] : "";
@@ -387,10 +439,26 @@
       ' data-departement="' + echapper(dep || "Les deux") + '"' +
       ' data-region="' + echapper(reg || "Toutes") + '">' +
       colonnes.map(function (c, i) {
-        var cls = i === 0 ? ' class="cell-entreprise"' : "";
-        return "<td" + cls + ">" + echapper(ligne[c] != null ? ligne[c] : "") + "</td>";
+        if (i === 0) {
+          return '<td class="cell-entreprise">' +
+            echapper(ligne[c] != null ? ligne[c] : "") + "</td>";
+        }
+        return cellule(c, ligne[c]);
       }).join("") + "</tr>";
   }
+
+  // Copie en 1 clic depuis le tableau (délégation globale : couvre aussi les
+  // lignes ajoutées par « Voir plus » et la recherche en lot).
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest && e.target.closest(".btn-copie");
+    if (!btn) { return; }
+    var courriel = btn.dataset.courriel || "";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(courriel).then(function () {
+        toast("Courriel copié : " + courriel, "ok");
+      }, function () { toast("Impossible de copier."); });
+    }
+  });
 
   // Regroupe visuellement par entreprise selon l'ORDRE COURANT : le nom (col 0)
   // n'apparaît qu'une fois par groupe de lignes consécutives. Ignore les lignes
@@ -510,14 +578,16 @@
     });
 
     // Clic sur une ligne -> modale (délégation : gère aussi les lignes ajoutées).
+    // Les boutons (copie, voir plus) et les liens gardent leur propre action.
     tbody.addEventListener("click", function (e) {
-      if (e.target.closest && e.target.closest(".btn-plus")) { return; }
+      if (e.target.closest && e.target.closest("button, a")) { return; }
       var tr = e.target.closest ? e.target.closest("tr") : null;
       if (!tr || estOutil(tr) || !tbody.contains(tr)) { return; }
       ouvrirDepuisLigne(tr, entetes);
     });
     tbody.addEventListener("keydown", function (e) {
       if (e.key !== "Enter" && e.key !== " ") { return; }
+      if (e.target.closest && e.target.closest("button, a")) { return; }
       var tr = e.target.closest ? e.target.closest("tr") : null;
       if (!tr || estOutil(tr)) { return; }
       e.preventDefault();
