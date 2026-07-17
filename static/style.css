@@ -702,6 +702,50 @@ input[type="file"]::file-selector-button {
 .pastille-zero { background: var(--ambre); }
 .resultats-tete form { margin: 0; }
 
+/* écran de chargement plein écran (recherche simple) */
+.chargement-ecran {
+  position: fixed; inset: 0; z-index: 300;
+  display: grid; place-items: center;
+  background: rgba(246, 248, 252, .78);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  animation: charg-apparait .25s ease both;
+}
+.chargement-boite {
+  display: flex; flex-direction: column; align-items: center; gap: .35rem;
+  text-align: center; padding: 2rem 2.6rem;
+  background: var(--surface); border: 1px solid var(--ligne);
+  border-radius: var(--r-lg); box-shadow: var(--ombre-3);
+  animation: charg-monte .35s cubic-bezier(.16, 1, .3, 1) both;
+}
+.ring { width: 62px; height: 62px; margin-bottom: .6rem; animation: ring-rot 1.6s linear infinite; }
+.ring circle { fill: none; stroke-width: 4.5; }
+.ring-piste { stroke: var(--ligne); }
+.ring-arc {
+  stroke: url(#ring-grad); stroke-linecap: round;
+  stroke-dasharray: 1 125.7; stroke-dashoffset: 0;
+  animation: ring-dash 1.4s ease-in-out infinite;
+}
+.chargement-titre { margin: 0; font-family: var(--f-titre); font-weight: 700; font-size: 1.1rem; color: var(--encre); }
+.chargement-ecran .chargement-msg { margin: 0; font-size: .9rem; color: var(--ardoise); min-height: 1.3em; }
+
+@keyframes charg-apparait { from { opacity: 0; } to { opacity: 1; } }
+@keyframes charg-monte {
+  from { opacity: 0; transform: translateY(14px) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ring-rot { to { transform: rotate(360deg); } }
+/* l'arc s'étire puis se resserre en tournant (circonférence r=20 -> 125.7) */
+@keyframes ring-dash {
+  0%   { stroke-dasharray: 1 125.7;  stroke-dashoffset: 0; }
+  50%  { stroke-dasharray: 92 125.7; stroke-dashoffset: -28; }
+  100% { stroke-dasharray: 92 125.7; stroke-dashoffset: -124; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chargement-ecran, .chargement-boite { animation: none; }
+  .ring { animation: none; }
+  .ring-arc { animation: none; stroke-dasharray: 94 125.7; }
+}
+
 .tableau-scroll { overflow-x: auto; }
 table {
   width: 100%; border-collapse: collapse; font-size: .88rem;

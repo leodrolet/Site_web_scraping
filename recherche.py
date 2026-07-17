@@ -2,15 +2,19 @@
 recherche.py — Logique de recherche de contacts B2B.
 
 Ordre des tentatives (avec repli automatique si rien n'est trouvé) :
+    Étape  0   — Résolution du domaine : nom d'entreprise -> site web réel
+                 (Clearbit Autocomplete, gratuit et sans clé), pour éviter les
+                 mauvaises associations de Hunter (ex. Bell Canada -> newbec.com)
     Étapes A/B — Hunter.io : Domain Search + filtrage des contacts par département
     Étape  C   — Apollo.io : recherche de personnes par entreprise + titre
-    Étape  D   — SerpAPI    : repli Google (renvoie une piste LinkedIn manuelle)
+    Étape  D   — SerpAPI    : repli Google (jusqu'à 3 pistes LinkedIn manuelles)
 
 La fonction publique est `rechercher_entreprise(...)`. Elle ne lève jamais
 d'exception pour une entreprise donnée, SAUF une `ErreurAPI` bloquante
 (clé invalide ou quota épuisé) que l'interface se charge d'afficher.
 """
 
+import re
 from datetime import datetime
 
 import requests
@@ -108,6 +112,14 @@ def _departement_lisible(valeur):
         "marketing": "Marketing",
         "communication": "Marketing",
         "sales": "Ventes",
+        "executive": "Direction",
+        "management": "Direction",
+        "finance": "Finance",
+        "hr": "RH",
+        "it": "TI",
+        "legal": "Juridique",
+        "support": "Support",
+        "operations": "Opérations",
     }
     return correspondances.get((valeur or "").lower(), valeur or "")
 
@@ -158,9 +170,52 @@ def _trier_pertinence(contacts):
 
 
 # ----------------------------------------------------------------------
+# Étape 0 — Résolution du domaine de l'entreprise
+# ----------------------------------------------------------------------
+# Un nom qui est déjà un domaine ("bell.ca", "www.desjardins.com") est utilisé
+# tel quel : cela permet aussi de chercher directement par domaine.
+_REGEX_DOMAINE = re.compile(r"^(https?://)?(www\.)?([a-z0-9-]+(\.[a-z0-9-]+)+)/?$",
+                            re.IGNORECASE)
+
+
+def _resoudre_domaine(entreprise):
+    """Trouve le domaine web réel de l'entreprise. Retourne None si inconnu.
+
+    La correspondance nom -> domaine de Hunter est fragile (« Bell Canada »
+    donnait newbec.com) : interroger Hunter par domaine est beaucoup plus
+    fiable. Clearbit Autocomplete est public, gratuit et sans clé ; en cas
+    d'échec (réseau, service disparu), on retombe simplement sur la recherche
+    par nom — jamais bloquant.
+    """
+    m = _REGEX_DOMAINE.match((entreprise or "").strip())
+    if m:
+        return m.group(3).lower()
+
+    try:
+        rep = requests.get(
+            "https://autocomplete.clearbit.com/v1/companies/suggest",
+            params={"query": entreprise}, timeout=5)
+        if rep.status_code != 200:
+            return None
+        suggestions = rep.json() or []
+    except (requests.exceptions.RequestException, ValueError):
+        return None
+
+    if not suggestions:
+        return None
+    # Correspondance exacte de nom d'abord, sinon la première suggestion
+    # (Clearbit classe déjà par pertinence).
+    nom_bas = entreprise.strip().lower()
+    for s in suggestions:
+        if (s.get("name") or "").strip().lower() == nom_bas:
+            return (s.get("domain") or "").lower() or None
+    return (suggestions[0].get("domain") or "").lower() or None
+
+
+# ----------------------------------------------------------------------
 # Étapes A / B — Hunter.io
 # ----------------------------------------------------------------------
-def _hunter_domain_search(entreprise, departement, region, besoin=5):
+def _hunter_domain_search(entreprise, departement, region, besoin=5, domaine_cible=None):
     """Domain Search Hunter : contacts filtrés (marketing/ventes).
 
     Récupère au moins `besoin` contacts pertinents en paginant via `offset`
@@ -175,17 +230,25 @@ def _hunter_domain_search(entreprise, departement, region, besoin=5):
 
     url = "https://api.hunter.io/v2/domain-search"
     cibles_hunter = FILTRES_DEPARTEMENT[departement]["hunter"]
-    contacts = []
+    # Deux niveaux : les contacts du département visé d'abord (`pertinents`),
+    # les autres contacts de l'entreprise en complément (`autres`) — mieux vaut
+    # proposer un contact « à valider » que rien du tout.
+    pertinents, autres = [], []
     domaine = modele = None
     pays = etat = ville = ""
 
     for page in range(_HUNTER_MAX_PAGES):
         params = {
-            "company": entreprise,
             "api_key": config.HUNTER_API_KEY,
             "limit": _HUNTER_LIMITE,
             "offset": page * _HUNTER_LIMITE,
         }
+        # Le domaine résolu (étape 0) est bien plus fiable que la
+        # correspondance nom -> domaine interne de Hunter.
+        if domaine_cible:
+            params["domain"] = domaine_cible
+        else:
+            params["company"] = entreprise
         try:
             rep = requests.get(url, params=params, timeout=config.TIMEOUT)
         except requests.exceptions.Timeout:
@@ -222,15 +285,15 @@ def _hunter_domain_search(entreprise, departement, region, besoin=5):
         for courriel in emails:
             dep = (courriel.get("department") or "").lower()
             poste = courriel.get("position") or ""
-            if not (dep in cibles_hunter or _titre_pertinent(poste, departement)):
-                continue
+            cible = dep in cibles_hunter or _titre_pertinent(poste, departement)
             confiance = courriel.get("confidence")
-            contacts.append({
+            fiche = {
                 "Entreprise": entreprise,
                 "Prénom": courriel.get("first_name") or "",
                 "Nom": courriel.get("last_name") or "",
                 "Titre": poste,
-                "Département": _departement_lisible(dep) or departement,
+                "Département": (_departement_lisible(dep) or departement) if cible
+                               else (_departement_lisible(dep) or "Autre — à valider"),
                 "Courriel": courriel.get("value") or "",
                 "Confiance (%)": confiance if confiance is not None else "",
                 "Ville": ville,
@@ -238,11 +301,18 @@ def _hunter_domain_search(entreprise, departement, region, besoin=5):
                 "Pays": pays,
                 "Source": f"Hunter.io ({domaine})" if domaine else "Hunter.io",
                 "Date de recherche": _aujourd_hui(),
-            })
+            }
+            (pertinents if cible else autres).append(fiche)
 
-        # Assez de contacts pour la tranche demandée, ou page incomplète.
-        if len(contacts) >= besoin or len(emails) < _HUNTER_LIMITE:
+        # Assez de contacts pertinents pour la tranche demandée, ou page incomplète.
+        if len(pertinents) >= besoin or len(emails) < _HUNTER_LIMITE:
             break
+
+    # Complète avec les contacts hors département (triés par séniorité) si les
+    # pertinents ne suffisent pas — un nom réel « à valider » vaut mieux que rien.
+    contacts = pertinents
+    if len(contacts) < besoin and autres:
+        contacts = pertinents + _trier_pertinence(autres)[:besoin - len(pertinents)]
 
     avertissements = []
     if domaine and not contacts:
@@ -252,6 +322,10 @@ def _hunter_domain_search(entreprise, departement, region, besoin=5):
         avertissements.append(
             f"Hunter.io : aucun contact « {departement} » identifié — {note}."
         )
+    elif not pertinents and contacts:
+        avertissements.append(
+            f"Hunter.io : aucun contact « {departement} » — complété avec "
+            f"{len(contacts)} contact(s) d'autres départements.")
     return contacts, avertissements
 
 
@@ -350,10 +424,10 @@ def _apollo_search(entreprise, departement, region, besoin=5):
 # ----------------------------------------------------------------------
 # Étape D — SerpAPI (repli Google)
 # ----------------------------------------------------------------------
-def _serpapi_fallback(entreprise, departement):
-    """Retourne (lien_linkedin, note). lien=None si rien trouvé."""
+def _serpapi_fallback(entreprise, departement, max_pistes=3):
+    """Retourne (liens_linkedin, note) — jusqu'à `max_pistes` liens, note=None si OK."""
     if not config.SERPAPI_KEY:
-        return None, "SerpAPI : clé absente — pas de repli Google."
+        return [], "SerpAPI : clé absente — pas de repli Google."
 
     requete = (
         f'site:linkedin.com "{entreprise}" '
@@ -370,22 +444,27 @@ def _serpapi_fallback(entreprise, departement):
     try:
         rep = requests.get(url, params=params, timeout=config.TIMEOUT)
     except requests.exceptions.Timeout:
-        return None, "SerpAPI : délai dépassé (10 s)."
+        return [], "SerpAPI : délai dépassé (10 s)."
     except requests.exceptions.RequestException as e:
-        return None, f"SerpAPI : erreur réseau ({e})."
+        return [], f"SerpAPI : erreur réseau ({e})."
 
     if rep.status_code == 401:
         raise ErreurAPI("SerpAPI : clé API invalide.", "SerpAPI")
     if rep.status_code == 429:
         raise ErreurAPI("SerpAPI : quota de recherches dépassé.", "SerpAPI")
     if rep.status_code != 200:
-        return None, f"SerpAPI : réponse inattendue (code {rep.status_code})."
+        return [], f"SerpAPI : réponse inattendue (code {rep.status_code})."
 
+    liens = []
     for r in (rep.json() or {}).get("organic_results", []) or []:
         lien = r.get("link", "")
-        if "linkedin.com" in lien:
-            return lien, None
-    return None, "SerpAPI : aucune piste LinkedIn trouvée."
+        if "linkedin.com" in lien and lien not in liens:
+            liens.append(lien)
+        if len(liens) >= max_pistes:
+            break
+    if liens:
+        return liens, None
+    return [], "SerpAPI : aucune piste LinkedIn trouvée."
 
 
 # ----------------------------------------------------------------------
@@ -442,12 +521,18 @@ def _rechercher(entreprise, departement, region, limite, offset):
     # sinon, avec aucune clé configurée, l'utilisateur verrait « Non trouvé »
     # au lieu de « Service temporairement indisponible ».
 
+    # Étape 0 — domaine réel de l'entreprise (jamais bloquant).
+    domaine_cible = _resoudre_domaine(entreprise)
+    if domaine_cible:
+        avertissements.append(f"Domaine résolu : {domaine_cible}.")
+
     # Étapes A / B — Hunter.io
     if not config.HUNTER_API_KEY:
         avertissements.append("Hunter.io : clé API absente — étape ignorée.")
     else:
         try:
-            contacts, av = _hunter_domain_search(entreprise, departement, region, besoin)
+            contacts, av = _hunter_domain_search(entreprise, departement, region,
+                                                 besoin, domaine_cible)
             un_fournisseur_a_repondu = True
             avertissements += av
             if contacts:
@@ -477,17 +562,17 @@ def _rechercher(entreprise, departement, region, limite, offset):
             avertissements.append("SerpAPI : clé absente — pas de repli Google.")
         else:
             try:
-                lien, note = _serpapi_fallback(entreprise, departement)
+                liens, note = _serpapi_fallback(entreprise, departement)
                 un_fournisseur_a_repondu = True
                 if note:
                     avertissements.append(note)
-                if lien:
-                    fiche = _fiche_vide(
+                if liens:
+                    fiches = [_fiche_vide(
                         entreprise,
                         "Piste LinkedIn — vérification manuelle requise",
                         source=lien,
-                    )
-                    return {"contacts": [fiche], "avertissements": avertissements}
+                    ) for lien in liens[:limite]]
+                    return {"contacts": fiches, "avertissements": avertissements}
             except ErreurAPI as e:
                 print(f"[recherche] SerpAPI indisponible : {e.message}", flush=True)
                 erreurs.append(e)

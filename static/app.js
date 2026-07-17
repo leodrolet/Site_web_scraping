@@ -80,13 +80,53 @@
     "Recoupement des données…", "Presque prêt…",
   ];
 
-  // Remplace la zone de résultats par un squelette de tableau qui « pulse »,
-  // avec (optionnellement) des messages génériques rotatifs. Change le titre
-  // d'onglet. Retourne une fonction d'arrêt (clear interval + titre d'origine).
+  // Recherche simple (avecMessages=true) : écran de chargement plein écran —
+  // anneau animé + messages rotatifs. Recherche en lot (false) : squelette de
+  // tableau dans la zone de résultats (la barre de progression fait le reste).
+  // Change le titre d'onglet. Retourne une fonction d'arrêt.
   function demarrerChargement(avecMessages) {
     document.title = "🔍 Recherche… · ProspectB2B";
-    var zone = document.getElementById("zone-resultats");
     var timer = null;
+
+    if (avecMessages) {
+      var ecran = document.createElement("div");
+      ecran.className = "chargement-ecran";
+      ecran.setAttribute("role", "status");
+      ecran.setAttribute("aria-live", "polite");
+      ecran.innerHTML =
+        '<div class="chargement-boite">' +
+          '<svg class="ring" viewBox="0 0 50 50" aria-hidden="true">' +
+            "<defs>" +
+              '<linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+                '<stop offset="0%" stop-color="#2F54EB"/>' +
+                '<stop offset="100%" stop-color="#E8912A"/>' +
+              "</linearGradient>" +
+            "</defs>" +
+            '<circle class="ring-piste" cx="25" cy="25" r="20"/>' +
+            '<circle class="ring-arc" cx="25" cy="25" r="20"/>' +
+          "</svg>" +
+          '<p class="chargement-titre">Recherche en cours…</p>' +
+          '<p class="chargement-msg">' + MESSAGES_ATTENTE[0] + "</p>" +
+        "</div>";
+      document.body.appendChild(ecran);
+      document.body.style.overflow = "hidden";
+      if (!reduitMouvement) {
+        var el = ecran.querySelector(".chargement-msg");
+        var idx = 0;
+        timer = setInterval(function () {
+          idx = (idx + 1) % MESSAGES_ATTENTE.length;
+          if (el) { el.textContent = MESSAGES_ATTENTE[idx]; }
+        }, 2500);
+      }
+      return function arreter() {
+        if (timer) { clearInterval(timer); }
+        if (ecran.parentNode) { ecran.parentNode.removeChild(ecran); }
+        document.body.style.overflow = "";
+        document.title = titreOriginal;
+      };
+    }
+
+    var zone = document.getElementById("zone-resultats");
     if (zone) {
       var lignes = "";
       for (var i = 0; i < 6; i++) {
@@ -96,21 +136,10 @@
           '<span class="sk" style="width:26%"></span>' +
           '<span class="sk" style="width:18%"></span></div>';
       }
-      var msg = avecMessages
-        ? '<p class="chargement-msg" aria-live="polite">' + MESSAGES_ATTENTE[0] + "</p>" : "";
-      zone.innerHTML = '<div class="chargement">' + msg +
+      zone.innerHTML = '<div class="chargement">' +
         '<div class="sk-table">' + lignes + "</div></div>";
-      if (avecMessages && !reduitMouvement) {
-        var el = zone.querySelector(".chargement-msg");
-        var idx = 0;
-        timer = setInterval(function () {
-          idx = (idx + 1) % MESSAGES_ATTENTE.length;
-          if (el) { el.textContent = MESSAGES_ATTENTE[idx]; }
-        }, 2500);
-      }
     }
     return function arreter() {
-      if (timer) { clearInterval(timer); }
       document.title = titreOriginal;
     };
   }
