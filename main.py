@@ -17,11 +17,15 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+from fastapi.exception_handlers import http_exception_handler  # noqa: E402
+from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa: E402
+
 from auth import (RedirectionConfirmation, RedirectionConnexion,  # noqa: E402
-                  RedirectionNonAutorise)
-from database import init_db  # noqa: E402
+                  RedirectionNonAutorise, utilisateur_actuel)
+from database import SessionLocal, init_db  # noqa: E402
 from routes import (admin_routes, app_routes, auth_routes,  # noqa: E402
                     plan_routes, public)
+from templating import rendre  # noqa: E402
 
 app = FastAPI(title="Outil de prospection B2B")
 
@@ -81,6 +85,26 @@ async def _rediriger_vers_app(request, exc):
 async def _rediriger_vers_confirmation(request, exc):
     """Utilisateur connecté mais email non confirmé -> page d'attente."""
     return RedirectResponse("/confirmation-requise", status_code=303)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _page_introuvable(request, exc):
+    """404 : page stylée cohérente avec le site, au lieu du JSON FastAPI
+    ({"detail": "Not Found"}) qui expose le backend. Les autres codes gardent
+    le comportement FastAPI par défaut."""
+    if exc.status_code != 404:
+        return await http_exception_handler(request, exc)
+    # `utilisateur` sert uniquement à afficher la bonne barre de navigation.
+    db = SessionLocal()
+    try:
+        utilisateur = utilisateur_actuel(request, db)
+    except Exception:
+        utilisateur = None
+    finally:
+        db.close()
+    reponse = rendre(request, "404.html", utilisateur=utilisateur)
+    reponse.status_code = 404
+    return reponse
 
 
 app.include_router(public.router)

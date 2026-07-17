@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Page introuvable{% endblock %}
+
+{% block content %}
+<section class="bloc centre-page">
+  <div class="carte carte-form etat-vide">
+    <span class="etat-vide-ic">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M8.5 11h5"/></svg>
+    </span>
+    <p class="etat-vide-titre">Page introuvable</p>
+    <p class="etat-vide-texte">
+      L'adresse demandée n'existe pas ou a été déplacée.
+    </p>
+    <p class="centre" style="margin-top: 12px;">
+      {% if utilisateur %}
+        <a class="btn" href="/app">Retour à l'outil</a>
+      {% else %}
+        <a class="btn" href="/">Retour à l'accueil</a>
+      {% endif %}
+    </p>
+  </div>
+</section>
+{% endblock %}

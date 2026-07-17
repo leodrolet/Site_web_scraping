@@ -56,13 +56,17 @@ PAYS_PAR_REGION = {
 
 # Pagination des fournisseurs. Plafond de sécurité : sans lui, une seule
 # entreprise très fournie pourrait vider le pool de crédits du mois.
-#   Hunter : 1 requête Domain Search = 1 crédit, renvoie jusqu'à `limit` (max
-#            100) courriels. Une page suffit donc presque toujours ; au-delà de
-#            100 contacts il faut paginer via `offset`, chaque page = 1 crédit.
+#   Hunter : 1 requête Domain Search = 1 crédit, renvoie jusqu'à `limit`
+#            courriels. ATTENTION : le plan gratuit PLAFONNE `limit` à 10 —
+#            limit=100 provoque un HTTP 400 (pagination_error) sur CHAQUE appel
+#            et le moteur ne retourne alors jamais rien. On demande donc 10 par
+#            page (valable sur tous les plans) et on pagine via `offset`,
+#            chaque page = 1 crédit.
 #   Apollo : People Search paginé via `page`/`per_page` (max 100). Les crédits
 #            e-mail se consomment au déverrouillage, pas à la recherche.
-# 5 pages × 100 = jusqu'à 500 contacts par entreprise, ce qui est déjà énorme.
-_HUNTER_LIMITE = 100
+# 5 pages × 10 = jusqu'à 50 contacts Hunter par entreprise, assez pour couvrir
+# le besoin maximal du site (offset 20 + limite 25 = 45).
+_HUNTER_LIMITE = 10
 _HUNTER_MAX_PAGES = 5
 _APOLLO_LIMITE = 100
 _APOLLO_MAX_PAGES = 5
@@ -405,6 +409,16 @@ def rechercher_entreprise(entreprise, departement="Les deux", region="Toutes",
     bloquantes : identiques à avant. `ErreurAPI` n'est levée que si TOUS les
     fournisseurs tentés échouent.
     """
+    resultat = _rechercher(entreprise, departement, region, limite, offset)
+    # Trace serveur (logs Vercel) : sans elle, une panne fournisseur (clé
+    # absente, quota, plan trop bas...) est invisible et se confond avec un
+    # simple « aucun résultat ». Jamais montré à l'utilisateur.
+    for note in resultat["avertissements"]:
+        print(f"[recherche] {entreprise!r} : {note}", flush=True)
+    return resultat
+
+
+def _rechercher(entreprise, departement, region, limite, offset):
     entreprise = (entreprise or "").strip()
     if not entreprise:
         return {"contacts": [], "avertissements": ["Nom d'entreprise vide."]}
@@ -424,53 +438,71 @@ def rechercher_entreprise(entreprise, departement="Les deux", region="Toutes",
     avertissements = []
     erreurs = []          # ErreurAPI attrapées, par fournisseur
     un_fournisseur_a_repondu = False  # au moins un appel sans erreur bloquante
+    # NB : une étape sautée faute de clé ne compte PAS comme une réponse —
+    # sinon, avec aucune clé configurée, l'utilisateur verrait « Non trouvé »
+    # au lieu de « Service temporairement indisponible ».
 
     # Étapes A / B — Hunter.io
-    try:
-        contacts, av = _hunter_domain_search(entreprise, departement, region, besoin)
-        un_fournisseur_a_repondu = True
-        avertissements += av
-        if contacts:
-            return {"contacts": tranche(contacts), "avertissements": avertissements}
-    except ErreurAPI as e:
-        print(f"[recherche] Hunter.io indisponible : {e.message}", flush=True)
-        erreurs.append(e)
+    if not config.HUNTER_API_KEY:
+        avertissements.append("Hunter.io : clé API absente — étape ignorée.")
+    else:
+        try:
+            contacts, av = _hunter_domain_search(entreprise, departement, region, besoin)
+            un_fournisseur_a_repondu = True
+            avertissements += av
+            if contacts:
+                return {"contacts": tranche(contacts), "avertissements": avertissements}
+        except ErreurAPI as e:
+            print(f"[recherche] Hunter.io indisponible : {e.message}", flush=True)
+            erreurs.append(e)
 
     # Étape C — Apollo.io
-    try:
-        contacts, av = _apollo_search(entreprise, departement, region, besoin)
-        un_fournisseur_a_repondu = True
-        avertissements += av
-        if contacts:
-            return {"contacts": tranche(contacts), "avertissements": avertissements}
-    except ErreurAPI as e:
-        print(f"[recherche] Apollo.io indisponible : {e.message}", flush=True)
-        erreurs.append(e)
+    if not config.APOLLO_API_KEY:
+        avertissements.append("Apollo.io : clé API absente — étape ignorée.")
+    else:
+        try:
+            contacts, av = _apollo_search(entreprise, departement, region, besoin)
+            un_fournisseur_a_repondu = True
+            avertissements += av
+            if contacts:
+                return {"contacts": tranche(contacts), "avertissements": avertissements}
+        except ErreurAPI as e:
+            print(f"[recherche] Apollo.io indisponible : {e.message}", flush=True)
+            erreurs.append(e)
 
     # Étape D — SerpAPI (repli Google) : une seule piste LinkedIn, jamais paginée.
     # Sans objet pour un « Voir plus » (offset>0) -> on ne la renvoie qu'au 1er appel.
     if offset == 0:
-        try:
-            lien, note = _serpapi_fallback(entreprise, departement)
-            un_fournisseur_a_repondu = True
-            if note:
-                avertissements.append(note)
-            if lien:
-                fiche = _fiche_vide(
-                    entreprise,
-                    "Piste LinkedIn — vérification manuelle requise",
-                    source=lien,
-                )
-                return {"contacts": [fiche], "avertissements": avertissements}
-        except ErreurAPI as e:
-            print(f"[recherche] SerpAPI indisponible : {e.message}", flush=True)
-            erreurs.append(e)
+        if not config.SERPAPI_KEY:
+            avertissements.append("SerpAPI : clé absente — pas de repli Google.")
+        else:
+            try:
+                lien, note = _serpapi_fallback(entreprise, departement)
+                un_fournisseur_a_repondu = True
+                if note:
+                    avertissements.append(note)
+                if lien:
+                    fiche = _fiche_vide(
+                        entreprise,
+                        "Piste LinkedIn — vérification manuelle requise",
+                        source=lien,
+                    )
+                    return {"contacts": [fiche], "avertissements": avertissements}
+            except ErreurAPI as e:
+                print(f"[recherche] SerpAPI indisponible : {e.message}", flush=True)
+                erreurs.append(e)
 
-    # Tous les fournisseurs tentés ont échoué en erreur bloquante : on remonte.
-    if erreurs and not un_fournisseur_a_repondu:
+    # Aucun fournisseur n'a réellement été interrogé (clés absentes) ou tous
+    # ont échoué en erreur bloquante : on remonte, l'interface affichera le
+    # message « Service temporairement indisponible ».
+    if not un_fournisseur_a_repondu:
+        if erreurs:
+            raise ErreurAPI(
+                "Tous les fournisseurs de données sont indisponibles : "
+                + " | ".join(e.message for e in erreurs))
         raise ErreurAPI(
-            "Tous les fournisseurs de données sont indisponibles : "
-            + " | ".join(e.message for e in erreurs))
+            "Aucun fournisseur de données n'est configuré "
+            "(clés API absentes de l'environnement).")
 
     # « Voir plus » sans résultat supplémentaire -> liste vide (pas de fiche).
     if offset > 0:

@@ -25,7 +25,9 @@ def accueil(request: Request, db: Session = Depends(get_db)):
 @router.get("/tarifs")
 def tarifs():
     # Les plans ne sont plus affichés : l'ancienne page renvoie vers l'accueil.
-    return RedirectResponse("/#tarifs", status_code=301)
+    # 302 (et non 301) : la cible pourra redevenir une vraie page de tarifs
+    # sans être coincée dans le cache navigateur.
+    return RedirectResponse("/", status_code=302)
 
 
 @router.get("/confidentialite")

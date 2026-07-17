@@ -58,7 +58,8 @@
                 <td>{{ h.entreprise }}</td>
                 <td>{{ h.departement }}</td>
                 <td>{{ h.region }}</td>
-                <td class="hist-date">{{ h.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                {# Stocké en UTC ; converti en heure locale par app.js (data-utc). #}
+                <td class="hist-date" data-utc="{{ h.date.strftime('%Y-%m-%dT%H:%M:%S') }}Z">{{ h.date.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td><span class="pastille-mini">{{ h.nb_contacts_trouves }}</span></td>
               </tr>
             {% endfor %}

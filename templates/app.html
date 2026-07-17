@@ -64,7 +64,8 @@
                 <td>{{ h.entreprise }}</td>
                 <td>{{ h.departement }}</td>
                 <td>{{ h.region }}</td>
-                <td class="hist-date">{{ h.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                {# Stocké en UTC ; converti en heure locale par app.js (data-utc). #}
+                <td class="hist-date" data-utc="{{ h.date.strftime('%Y-%m-%dT%H:%M:%S') }}Z">{{ h.date.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td><span class="pastille-mini">{{ h.nb_contacts_trouves }}</span></td>
                 <td>
                   <button type="button" class="btn-ghost btn-relancer"
@@ -157,10 +158,11 @@
   <!-- 5 · Résultats -->
   <div id="zone-resultats">
     {% if resultats is defined and resultats %}
+      {% set nbc = nb_contacts if nb_contacts is defined else resultats|length %}
       <div class="resultats">
         <div class="resultats-tete">
           <h2>
-            <span class="pastille">{{ nb_contacts if nb_contacts is defined else resultats|length }}</span> contact(s) trouvé(s)
+            <span class="pastille{% if nbc == 0 %} pastille-zero{% endif %}">{{ nbc }}</span> contact(s) trouvé(s)
             <span class="compteur-sec">· {{ nb_entreprises if nb_entreprises is defined else 1 }} entreprise(s)</span>
           </h2>
           <form method="post" action="/app/telecharger">
@@ -172,6 +174,12 @@
             </button>
           </form>
         </div>
+        {% if nbc == 0 %}
+          <div class="alerte alerte-warn">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+            <span>Aucun contact vérifié pour cette recherche — essayez une autre orthographe du nom de l'entreprise, élargissez le département ou la région, ou <a href="mailto:contact@prospectb2b.app">contactez le support</a>.</span>
+          </div>
+        {% endif %}
         <div class="resultats-outils">
           <div class="input-wrap">
             <svg class="input-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>

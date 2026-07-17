@@ -464,6 +464,31 @@ svg.ic-sm { width: 16px; height: 16px; flex: none; }
 .champ-consent input { margin-top: .2rem; width: 16px; height: 16px; flex: none; accent-color: var(--cobalt); }
 .champ-consent a { text-decoration: underline; }
 
+/* validation côté client : message sous le champ + bordure en erreur */
+.champ-erreur {
+  margin: .1rem 0 1.1rem; font-size: .84rem; color: var(--erreur);
+}
+.champ .champ-erreur { margin: 0; }
+.champ.invalide input, .champ-consent.invalide input { border-color: var(--erreur); }
+.champ.invalide input:focus { box-shadow: 0 0 0 3px var(--erreur-pale); }
+.champ-consent.invalide { color: var(--erreur); }
+
+/* indicateur de force du mot de passe (inscription) */
+.mdp-force { display: flex; align-items: center; gap: .6rem; }
+.mdp-force-rail {
+  flex: 1; height: 5px; border-radius: var(--r-pill);
+  background: var(--ligne); overflow: hidden;
+}
+.mdp-force-barre {
+  display: block; height: 100%; width: 0;
+  border-radius: var(--r-pill); transition: width .25s ease, background .25s ease;
+}
+.mdp-force-libelle { font-size: .8rem; color: var(--ardoise); white-space: nowrap; }
+.mdp-force.force-1 .mdp-force-barre { background: var(--erreur); }
+.mdp-force.force-2 .mdp-force-barre { background: var(--ambre); }
+.mdp-force.force-3 .mdp-force-barre { background: var(--cobalt); }
+.mdp-force.force-4 .mdp-force-barre { background: var(--ok); }
+
 /* séparateur discret dans une carte */
 .sep-carte { border: 0; border-top: 1px solid var(--ligne); margin: 1.2rem 0; }
 
@@ -673,6 +698,8 @@ input[type="file"]::file-selector-button {
   background: var(--cobalt); color: #fff;
   font-family: var(--f-mono); font-size: .85rem; font-weight: 600;
 }
+/* aucun contact vérifié : la pastille ne doit pas ressembler à un succès */
+.pastille-zero { background: var(--ambre); }
 .resultats-tete form { margin: 0; }
 
 .tableau-scroll { overflow-x: auto; }

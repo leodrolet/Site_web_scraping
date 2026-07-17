@@ -250,7 +250,22 @@
         champ.scrollIntoView({ behavior: "smooth", block: "center" });
         champ.focus();
       }
+      toast("Champs préremplis — cliquez « Rechercher » pour confirmer (1 recherche du quota).");
     });
+  });
+
+  // ----------------------------------------------------------------
+  // Dates : les horodatages sont stockés en UTC — affichage en heure locale
+  // ----------------------------------------------------------------
+  document.querySelectorAll("[data-utc]").forEach(function (el) {
+    var d = new Date(el.dataset.utc);
+    if (isNaN(d.getTime())) { return; }
+    function pad(n) { return (n < 10 ? "0" : "") + n; }
+    // fr-CA donne AAAA-MM-JJ ; l'heure est composée à la main pour garder le
+    // format HH:MM du site (fr-CA produirait « 22 h 55 »).
+    var date = d.toLocaleDateString("fr-CA");
+    if (el.dataset.format === "date") { el.textContent = date; return; }
+    el.textContent = date + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
   });
 
   // ----------------------------------------------------------------
@@ -605,9 +620,17 @@
       return construireLigne(colonnes, ligne, info.dep, info.reg);
     }).join("");
 
+    var nb = nbContacts != null ? nbContacts : resultats.length;
+    // 0 contact vérifié : pastille distincte + message explicite (pas un succès).
+    var alerteZero = nb === 0
+      ? '<div class="alerte alerte-warn"><span>Aucun contact vérifié pour cette ' +
+        "recherche — essayez une autre orthographe du nom de l'entreprise, " +
+        "élargissez le département ou la région, ou " +
+        '<a href="mailto:contact@prospectb2b.app">contactez le support</a>.</span></div>'
+      : "";
     bloc.innerHTML =
       '<div class="resultats-tete">' +
-        '<h2><span class="pastille">' + (nbContacts != null ? nbContacts : resultats.length) +
+        '<h2><span class="pastille' + (nb === 0 ? " pastille-zero" : "") + '">' + nb +
           '</span> contact(s) trouvé(s) <span class="compteur-sec">· ' +
           (nbEntreprises != null ? nbEntreprises : 1) + ' entreprise(s)</span></h2>' +
         '<form method="post" action="/app/telecharger">' +
@@ -615,7 +638,7 @@
           '<input type="hidden" name="charge" value="' + echapper(charge) + '">' +
           '<button class="btn" type="submit">Télécharger Excel</button>' +
         "</form>" +
-      "</div>" +
+      "</div>" + alerteZero +
       '<div class="resultats-outils">' +
         '<div class="input-wrap">' +
           '<svg class="input-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>' +
@@ -627,6 +650,146 @@
         thead + "</thead><tbody>" + corps + "</tbody></table></div>";
     return bloc;
   }
+
+  // ----------------------------------------------------------------
+  // Inscription : validation côté client + indicateur de force du mot de passe
+  // ----------------------------------------------------------------
+  (function () {
+    var form = document.getElementById("form-inscription");
+    if (!form) { return; }
+
+    var champs = {
+      email: form.querySelector("#email"),
+      mdp: form.querySelector("#mot_de_passe"),
+      confirmation: form.querySelector("#confirmation"),
+      consentement: form.querySelector('input[name="consentement"]'),
+    };
+    var tentativeFaite = false;
+
+    // Affiche (ou retire, si message vide) le message d'erreur sous un champ.
+    // Dans .champ le message est ajouté à l'intérieur du bloc ; pour la case de
+    // consentement (un <label>), il est inséré juste après pour rester cliquable
+    // sans faire partie du label.
+    function marquer(input, message) {
+      var champ = input.closest(".champ");
+      var conteneur = champ || input.closest(".champ-consent");
+      if (!conteneur) { return; }
+      var msg = champ ? champ.querySelector(".champ-erreur")
+        : (conteneur.nextElementSibling &&
+           conteneur.nextElementSibling.classList.contains("champ-erreur")
+           ? conteneur.nextElementSibling : null);
+      if (message) {
+        if (!msg) {
+          msg = document.createElement("p");
+          msg.className = "champ-erreur";
+          msg.setAttribute("role", "alert");
+          if (champ) { champ.appendChild(msg); }
+          else { conteneur.parentNode.insertBefore(msg, conteneur.nextSibling); }
+        }
+        msg.textContent = message;
+        conteneur.classList.add("invalide");
+        input.setAttribute("aria-invalid", "true");
+      } else {
+        if (msg) { msg.parentNode.removeChild(msg); }
+        conteneur.classList.remove("invalide");
+        input.removeAttribute("aria-invalid");
+      }
+    }
+
+    function erreurEmail() {
+      var v = (champs.email.value || "").trim();
+      if (!v) { return "Le courriel est requis."; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) {
+        return "Adresse courriel invalide (ex. : vous@entreprise.com).";
+      }
+      return "";
+    }
+    function erreurMdp() {
+      var v = champs.mdp.value || "";
+      if (!v) { return "Le mot de passe est requis."; }
+      if (v.length < 8) { return "Le mot de passe doit contenir au moins 8 caractères."; }
+      return "";
+    }
+    function erreurConfirmation() {
+      var v = champs.confirmation.value || "";
+      if (!v) { return "Confirmez votre mot de passe."; }
+      if (v !== (champs.mdp.value || "")) { return "Les deux mots de passe ne correspondent pas."; }
+      return "";
+    }
+    function erreurConsentement() {
+      return champs.consentement.checked
+        ? "" : "Vous devez accepter la politique de confidentialité pour créer un compte.";
+    }
+
+    var regles = [
+      [champs.email, erreurEmail],
+      [champs.mdp, erreurMdp],
+      [champs.confirmation, erreurConfirmation],
+      [champs.consentement, erreurConsentement],
+    ];
+
+    function validerTout(afficher) {
+      var premierInvalide = null;
+      regles.forEach(function (r) {
+        var erreur = r[1]();
+        if (afficher) { marquer(r[0], erreur); }
+        if (erreur && !premierInvalide) { premierInvalide = r[0]; }
+      });
+      return premierInvalide;
+    }
+
+    form.addEventListener("submit", function (e) {
+      tentativeFaite = true;
+      var invalide = validerTout(true);
+      if (invalide) {
+        e.preventDefault();
+        invalide.focus();
+      }
+    });
+
+    // Après une première tentative, chaque champ se revalide en direct.
+    regles.forEach(function (r) {
+      var evt = r[0].type === "checkbox" ? "change" : "input";
+      r[0].addEventListener(evt, function () {
+        if (tentativeFaite) { marquer(r[0], r[1]()); }
+      });
+    });
+    // La confirmation dépend aussi du premier mot de passe.
+    champs.mdp.addEventListener("input", function () {
+      if (tentativeFaite) { marquer(champs.confirmation, erreurConfirmation()); }
+    });
+
+    // Indicateur de force : longueur + variété de caractères (indicatif).
+    var jauge = document.getElementById("mdp-force");
+    if (jauge) {
+      var barre = jauge.querySelector(".mdp-force-barre");
+      var libelle = jauge.querySelector(".mdp-force-libelle");
+      var NIVEAUX = [
+        { seuil: 0, texte: "Trop court (8 caractères min.)", classe: "force-1", pct: 25 },
+        { seuil: 2, texte: "Faible", classe: "force-1", pct: 25 },
+        { seuil: 3, texte: "Moyen", classe: "force-2", pct: 50 },
+        { seuil: 4, texte: "Bon", classe: "force-3", pct: 75 },
+        { seuil: 5, texte: "Excellent", classe: "force-4", pct: 100 },
+      ];
+      champs.mdp.addEventListener("input", function () {
+        var v = champs.mdp.value || "";
+        jauge.hidden = !v;
+        if (!v) { return; }
+        var score = 0;
+        if (v.length >= 8) { score += 2; }
+        if (v.length >= 12) { score += 1; }
+        if (/[a-z]/.test(v) && /[A-Z]/.test(v)) { score += 1; }
+        if (/\d/.test(v)) { score += 1; }
+        if (/[^A-Za-z0-9]/.test(v)) { score += 1; }
+        if (v.length < 8) { score = 0; }
+        var niveau = NIVEAUX[0];
+        NIVEAUX.forEach(function (n) { if (score >= n.seuil) { niveau = n; } });
+        jauge.className = "mdp-force " + niveau.classe;
+        barre.style.width = niveau.pct + "%";
+        libelle.textContent = niveau.texte;
+      });
+    }
+  })();
 
   var formLot = document.getElementById("form-lot");
   if (formLot && window.fetch && window.ReadableStream) {
