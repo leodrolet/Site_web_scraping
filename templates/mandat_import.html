@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Correspondance des colonnes{% endblock %}
+{% block content %}
+<section class="app-wrap mandat-wrap">
+  <div class="app-tete"><a href="/admin/mandats/{{ mandat.id }}">← {{ mandat.nom }}</a><h1>Associer les colonnes</h1><p class="muted">{{ importation.fichier }} · {{ donnees.lignes|length }} ligne(s). Aucune organisation n’a encore été ajoutée.</p></div>
+  {% if erreur %}<div class="alerte alerte-error" role="alert">{{ erreur }}</div>{% endif %}
+  <form method="post" action="/admin/mandats/{{ mandat.id }}/imports/{{ importation.id }}/mapper" class="mandat-panel">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="mandat-grille">
+    {% for k, infos in champs_import.items() %}<div class="champ"><label for="map-{{ k }}">{{ infos[0] }}{% if k == 'nom' %} (requis){% endif %}</label><select id="map-{{ k }}" name="{{ k }}" {% if k == 'nom' %}required{% endif %}><option value="">Ne pas associer</option>{% for h in donnees.entetes %}<option value="{{ loop.index0 }}" {% if mapping.get(k, '') == loop.index0|string %}selected{% endif %}>{{ loop.index }} · {{ h }}</option>{% endfor %}</select></div>{% endfor %}
+    </div><p class="mandat-aide">Toutes les colonnes originales restent consultables sur les fiches importées. Pour un nom ou un site absent, vous pourrez compléter la fiche manuellement.</p><button class="btn" type="submit">Voir l’aperçu et les doublons</button>
+  </form>
+  <h2>Extrait du fichier (10 premières lignes)</h2><div class="tableau-scroll"><table class="mandat-table"><thead><tr>{% for h in donnees.entetes %}<th>{{ h }}</th>{% endfor %}</tr></thead><tbody>{% for row in donnees.lignes[:10] %}<tr>{% for valeur in row %}<td>{{ valeur }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}

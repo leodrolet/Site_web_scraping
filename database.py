@@ -94,9 +94,13 @@ class DossierRecherche(Base):
     nom = Column(String(160), nullable=False)
     debut = Column(DateTime, default=datetime.utcnow, nullable=False)
     fin = Column(DateTime, nullable=True)
+    temps_minutes = Column(Integer, nullable=False, default=0, server_default="0")
+    budget_minutes = Column(Integer, nullable=False, default=480, server_default="480")
     utilisateur = relationship("Utilisateur", back_populates="dossiers")
     entreprises = relationship("EntrepriseDossier", back_populates="dossier",
                                cascade="all, delete-orphan")
+    imports = relationship("ImportMandat", back_populates="dossier",
+                           cascade="all, delete-orphan")
 
 
 class EntrepriseDossier(Base):
@@ -108,12 +112,33 @@ class EntrepriseDossier(Base):
     cle = Column(String(255), nullable=False)
     secteur = Column(String(160), default="")
     region = Column(String(160), default="")
+    pays = Column(String(160), default="", server_default="")
+    prix = Column(Text, default="", server_default="")
+    sources = Column(Text, default="", server_default="")
+    taille = Column(String(20), default="inconnue", server_default="inconnue")
+    durabilite = Column(Text, default="", server_default="")
+    donnees_import_json = Column(Text, default="[]", server_default="[]")
+    pistes_json = Column(Text, default="[]", server_default="[]")
+    revision = Column(Integer, nullable=False, default=0, server_default="0")
     site = Column(String(500), default="")
     statut = Column(String(20), default="a_faire")
     note = Column(Text, default="")
     contacts_json = Column(Text, default="[]")
     mise_a_jour = Column(DateTime, nullable=True)
     dossier = relationship("DossierRecherche", back_populates="entreprises")
+
+
+class ImportMandat(Base):
+    __tablename__ = "imports_mandat"
+    id = Column(String(40), primary_key=True)
+    dossier_id = Column(Integer, ForeignKey("dossiers_recherche.id"), nullable=False, index=True)
+    utilisateur_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=False)
+    cree_le = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fichier = Column(String(255), nullable=False)
+    donnees_json = Column(Text, nullable=False)
+    mapping_json = Column(Text, default="{}", nullable=False)
+    consomme = Column(Boolean, default=False, nullable=False)
+    dossier = relationship("DossierRecherche", back_populates="imports")
 
 
 # Colonnes ajoutées après la première mise en production : (nom -> définition SQL).
@@ -160,11 +185,35 @@ def _supprimer_table_cles_api():
         pass  # non bloquant
 
 
+def _assurer_colonnes_mandats():
+    """Migration additive et idempotente : conserve comptes, historique et anciens dossiers."""
+    ajouts = {
+        "dossiers_recherche": {"temps_minutes": "INTEGER NOT NULL DEFAULT 0",
+                               "budget_minutes": "INTEGER NOT NULL DEFAULT 480"},
+        "entreprises_dossier": {
+            "pays": "VARCHAR(160) DEFAULT ''", "prix": "TEXT DEFAULT ''",
+            "sources": "TEXT DEFAULT ''", "taille": "VARCHAR(20) DEFAULT 'inconnue'",
+            "durabilite": "TEXT DEFAULT ''", "donnees_import_json": "TEXT DEFAULT '[]'",
+            "pistes_json": "TEXT DEFAULT '[]'", "revision": "INTEGER NOT NULL DEFAULT 0",
+        },
+    }
+    with engine.begin() as conn:
+        # Évite deux ALTER simultanés pendant les démarrages Vercel/Postgres.
+        if conn.dialect.name == "postgresql":
+            conn.execute(text("SELECT pg_advisory_xact_lock(72816409)"))
+        for table, definitions in ajouts.items():
+            existantes = {c["name"] for c in inspect(conn).get_columns(table)}
+            for nom, definition in definitions.items():
+                if nom not in existantes:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {nom} {definition}"))
+
+
 def init_db():
     """Crée les tables si besoin. Résilient : ne fait pas planter l'import."""
     try:
         Base.metadata.create_all(bind=engine)
         _assurer_colonnes_utilisateurs()
+        _assurer_colonnes_mandats()
         _supprimer_table_cles_api()
     except Exception as exc:  # pragma: no cover
         print(f"[init_db] Impossible de créer/mettre à jour les tables : {exc}")

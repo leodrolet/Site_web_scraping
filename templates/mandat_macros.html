@@ -1,0 +1,48 @@
+{% macro champ(id, nom, label, valeur='', type='text', requis=false, limite=255) -%}
+<div class="champ"><label for="{{ id }}">{{ label }}</label><input id="{{ id }}" name="{{ nom }}" type="{{ type }}" value="{{ valeur or '' }}" maxlength="{{ limite }}" {% if requis %}required{% endif %}></div>
+{%- endmacro %}
+{% macro texte(id, nom, label, valeur='', limite=4000) -%}
+<div class="champ"><label for="{{ id }}">{{ label }}</label><textarea id="{{ id }}" name="{{ nom }}" rows="3" maxlength="{{ limite }}">{{ valeur or '' }}</textarea></div>
+{%- endmacro %}
+{% macro organisation(v, prefixe) -%}
+<div class="mandat-grille">
+  {{ champ(prefixe~'-nom', 'nom', 'Nom de l’organisation', v['nom'], requis=true) }}
+  {{ champ(prefixe~'-secteur', 'secteur', 'Secteur', v['secteur'], limite=160) }}
+  {{ champ(prefixe~'-pays', 'pays', 'Pays', v['pays'], limite=160) }}
+  {{ champ(prefixe~'-region', 'region', 'Région / ville', v['region'], limite=160) }}
+  {{ champ(prefixe~'-site', 'site', 'Site officiel (URL ou domaine)', v['site'], limite=500) }}
+  <div class="champ"><label for="{{ prefixe }}-taille">Taille et cible de contacts</label><select id="{{ prefixe }}-taille" name="taille">{% for k, label in tailles.items() %}<option value="{{ k }}" {% if v['taille'] == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="champ"><label for="{{ prefixe }}-statut">Statut de recherche</label><select id="{{ prefixe }}-statut" name="statut">{% for k, label in etats.items() %}<option value="{{ k }}" {% if v['statut'] == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  {{ texte(prefixe~'-prix', 'prix', 'Prix / distinctions', v['prix']) }}
+  {{ texte(prefixe~'-durabilite', 'durabilite', 'Construction durable / carbone zéro', v['durabilite']) }}
+  {{ texte(prefixe~'-sources', 'sources', 'Sources de l’organisation (un lien par ligne)', v['sources']) }}
+</div>
+{{ texte(prefixe~'-note', 'note', 'Notes de recherche', v['note']) }}
+{%- endmacro %}
+{% macro contact(c, nouveau=false) -%}
+{% set cid = c.get('id', '') %}{% set prefixe = 'contact-' ~ (cid or 'nouveau') %}
+{% set v = saisie_contact if saisie_contact is defined and contact_erreur == cid else c %}
+<details class="mandat-contact" {% if nouveau or (contact_erreur is defined and contact_erreur == cid) %}open{% endif %}>
+  <summary><span><strong>{{ c.get('nom') or 'Ajouter un contact' }}</strong>{% if c.get('poste') %}<span class="muted"> · {{ c.poste }}</span>{% endif %}</span>{% if not nouveau %}<span class="mandat-badge">{{ 'Retenu' if c.retenu else 'Non retenu' }} · {{ verifications.get(c.verification, 'À vérifier') }}</span>{% endif %}</summary>
+  <form method="post" action="/admin/mandats/{{ mandat.id }}/organisations/{{ entreprise.id }}/contacts" data-mandat-form>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="revision" value="{{ entreprise.revision }}"><input type="hidden" name="contact_id" value="{{ cid }}">
+    <p class="muted">Organisation : {{ entreprise.nom }}. {% if c.get('provenance') %}Origine : {{ c.provenance }}{% if c.get('date_recherche') %}, {{ c.date_recherche }}{% endif %}.{% endif %}</p>
+    <div class="mandat-grille">
+      {{ champ(prefixe~'-nom', 'nom', 'Nom complet', v.get('nom'), requis=true) }}
+      {{ champ(prefixe~'-poste', 'poste', 'Poste actuel', v.get('poste')) }}
+      {{ champ(prefixe~'-departement', 'departement', 'Département', v.get('departement')) }}
+      {{ champ(prefixe~'-region', 'region', 'Région / territoire couvert', v.get('region')) }}
+      {{ champ(prefixe~'-langue', 'langue', 'Langue connue (laisser vide si inconnue)', v.get('langue')) }}
+      {{ champ(prefixe~'-courriel', 'courriel', 'Courriel disponible', v.get('courriel'), type='email') }}
+      <div class="champ"><label for="{{ prefixe }}-courriel-statut">Statut du courriel</label><select id="{{ prefixe }}-courriel-statut" name="courriel_statut">{% for k, label in courriels.items() %}<option value="{{ k }}" {% if v.get('courriel_statut', 'non_trouve') == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      {{ champ(prefixe~'-source-courriel', 'source_courriel', 'Lien de la source du courriel', v.get('source_courriel'), type='url', limite=2000) }}
+      <div class="champ"><label for="{{ prefixe }}-verification">Vérification du contact</label><select id="{{ prefixe }}-verification" name="verification">{% for k, label in verifications.items() %}<option value="{{ k }}" {% if v.get('verification', 'a_verifier') == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      {{ champ(prefixe~'-date', 'date_verification', 'Date de vérification', v.get('date_verification'), type='date') }}
+    </div>
+    {{ texte(prefixe~'-sources', 'source', 'Liens confirmant le nom, le poste et les autres informations (un lien par ligne)', v.get('source'), limite=2000) }}
+    {{ texte(prefixe~'-note', 'note', 'Note : pertinence, anglais, territoire et origine des informations', v.get('note'), limite=2000) }}
+    <p class="mandat-aide">Ne déduisez pas l’anglais du pays. Un contact vérifié exige un poste, une source et une date. Un courriel trouvé exige sa propre source.</p>
+    <div class="mandat-actions"><label class="mandat-case"><input type="checkbox" name="retenu" {% if v.get('retenu') %}checked{% endif %}> Retenir ce contact dans l’export</label><button class="btn" type="submit">{{ 'Ajouter le contact' if nouveau else 'Enregistrer ce contact' }}</button></div>
+  </form>
+</details>
+{%- endmacro %}

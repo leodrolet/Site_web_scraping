@@ -30,6 +30,18 @@ MOTS_CLES_TITRES = [
 
 # Correspondance « département cible » -> filtres Hunter & titres Apollo.
 FILTRES_DEPARTEMENT = {
+    "Communications": {
+        "hunter": {"communication", "marketing"},
+        "titres": ["communication", "communications", "public relations", "relations publiques"],
+    },
+    "Partenariats": {
+        "hunter": {"business development", "sales", "communication"},
+        "titres": ["partnership", "partenariat", "relations institutionnelles", "external relations"],
+    },
+    "Développement des affaires": {
+        "hunter": {"sales", "business development"},
+        "titres": ["business development", "développement des affaires", "developpement des affaires"],
+    },
     "Marketing": {
         "hunter": {"marketing", "communication"},
         "titres": ["marketing", "cmo", "communication", "growth", "brand",
@@ -215,7 +227,8 @@ def _resoudre_domaine(entreprise):
 # ----------------------------------------------------------------------
 # Étapes A / B — Hunter.io
 # ----------------------------------------------------------------------
-def _hunter_domain_search(entreprise, departement, region, besoin=5, domaine_cible=None):
+def _hunter_domain_search(entreprise, departement, region, besoin=5, domaine_cible=None,
+                          max_pages=None, avec_sources=False):
     """Domain Search Hunter : contacts filtrés (marketing/ventes).
 
     Récupère au moins `besoin` contacts pertinents en paginant via `offset`
@@ -237,7 +250,7 @@ def _hunter_domain_search(entreprise, departement, region, besoin=5, domaine_cib
     domaine = modele = None
     pays = etat = ville = ""
 
-    for page in range(_HUNTER_MAX_PAGES):
+    for page in range(_HUNTER_MAX_PAGES if max_pages is None else max_pages):
         params = {
             "api_key": config.HUNTER_API_KEY,
             "limit": _HUNTER_LIMITE,
@@ -302,6 +315,9 @@ def _hunter_domain_search(entreprise, departement, region, besoin=5, domaine_cib
                 "Source": f"Hunter.io ({domaine})" if domaine else "Hunter.io",
                 "Date de recherche": _aujourd_hui(),
             }
+            if avec_sources:
+                fiche["URLs sources"] = [s.get("uri", "") for s in courriel.get("sources", []) if isinstance(s, dict)]
+                fiche["Organisation source"] = data.get("organization") or entreprise
             (pertinents if cible else autres).append(fiche)
 
         # Assez de contacts pertinents pour la tranche demandée, ou page incomplète.
@@ -332,7 +348,7 @@ def _hunter_domain_search(entreprise, departement, region, besoin=5, domaine_cib
 # ----------------------------------------------------------------------
 # Étape C — Apollo.io
 # ----------------------------------------------------------------------
-def _apollo_search(entreprise, departement, region, besoin=5):
+def _apollo_search(entreprise, departement, region, besoin=5, max_pages=None, avec_sources=False):
     """People Search Apollo : contacts pertinents, paginé (jusqu'à besoin, max 5 pages)."""
     if not config.APOLLO_API_KEY:
         return [], ["Apollo.io : clé API absente — étape ignorée."]
@@ -346,7 +362,7 @@ def _apollo_search(entreprise, departement, region, besoin=5):
     pays = PAYS_PAR_REGION.get(region, [])
     contacts = []
 
-    for page in range(1, _APOLLO_MAX_PAGES + 1):
+    for page in range(1, (_APOLLO_MAX_PAGES if max_pages is None else max_pages) + 1):
         corps = {
             "q_organization_name": entreprise,
             "person_titles": FILTRES_DEPARTEMENT[departement]["titres"],
@@ -401,6 +417,10 @@ def _apollo_search(entreprise, departement, region, besoin=5):
                 "Source": "Apollo.io",
                 "Date de recherche": _aujourd_hui(),
             })
+            if avec_sources:
+                contacts[-1]["URLs sources"] = [p.get("linkedin_url") or ""]
+                contacts[-1]["Organisation source"] = org.get("name") or ""
+                contacts[-1]["Région personne"] = ", ".join(filter(None, [p.get("city"), p.get("state"), p.get("country")]))
 
         # Fin de pagination : assez de contacts, page incomplète, ou dernière page.
         pagination = charge.get("pagination") or {}
@@ -424,12 +444,12 @@ def _apollo_search(entreprise, departement, region, besoin=5):
 # ----------------------------------------------------------------------
 # Étape D — SerpAPI (repli Google)
 # ----------------------------------------------------------------------
-def _serpapi_fallback(entreprise, departement, max_pistes=3):
+def _serpapi_fallback(entreprise, departement, max_pistes=3, requete=None):
     """Retourne (liens_linkedin, note) — jusqu'à `max_pistes` liens, note=None si OK."""
     if not config.SERPAPI_KEY:
         return [], "SerpAPI : clé absente — pas de repli Google."
 
-    requete = (
+    requete = requete or (
         f'site:linkedin.com "{entreprise}" '
         '("Marketing Director" OR "Sales Manager" OR "Directeur Marketing" '
         'OR "Directeur des ventes")'

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "mandat_macros.html" import organisation with context %}
+{% block title %}{{ mandat.nom }}{% endblock %}
+{% block content %}
+<section class="app-wrap mandat-wrap">
+  <div class="app-tete"><a href="/admin/mandats">← Mes mandats</a><h1>{{ mandat.nom }}</h1><p class="muted">Visez deux bons contacts, deux à trois dans une petite organisation, trois à cinq dans une grande.</p></div>
+  {% if erreur %}<div class="alerte alerte-error" role="alert">{{ erreur }}</div>{% endif %}
+  {% if message %}<div class="alerte alerte-info" role="status">{{ message }}</div>{% endif %}
+  <dl class="mandat-stats"><div><dt>Organisations</dt><dd>{{ stats.total }}</dd></div><div><dt>Traitées</dt><dd>{{ stats.traitees }}</dd></div><div><dt>Restantes</dt><dd>{{ stats.restantes }}</dd></div><div><dt>Contacts retenus</dt><dd>{{ stats.retenus }}</dd></div><div><dt>Fiches à vérifier</dt><dd>{{ stats.a_verifier }}</dd></div></dl>
+  <div class="mandat-actions"><p class="muted">Travail saisi : <strong>{{ mandat.temps_minutes }} / {{ mandat.budget_minutes }} min</strong>. Le temps passé hors du site peut être ajouté.</p><a class="btn" href="/admin/mandats/{{ mandat.id }}/export">Exporter le mandat en Excel</a></div>
+  <details class="mandat-panel"><summary>Nom, temps de travail et budget</summary><form method="post" action="/admin/mandats/{{ mandat.id }}/parametres">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="mandat-grille">
+      <div class="champ"><label for="nom-mandat">Nom</label><input type="text" id="nom-mandat" name="nom" value="{{ mandat.nom }}" required maxlength="160"></div>
+      <div class="champ"><label for="temps">Temps total réellement travaillé (minutes)</label><input type="number" id="temps" name="temps_minutes" min="0" max="100000" value="{{ mandat.temps_minutes }}" required></div>
+      <div class="champ"><label for="budget">Budget (420 min = 7 h, 480 min = 8 h)</label><input type="number" id="budget" name="budget_minutes" min="60" max="10000" value="{{ mandat.budget_minutes }}" required></div>
+    </div><button class="btn-ghost" type="submit">Enregistrer</button></form></details>
+  <div class="mandat-panel">
+    <h2>Importer la liste de Lyse</h2><p class="muted">CSV ou Excel .xlsx, jusqu’à 2 Mo et 2 000 lignes. Vous choisirez les colonnes et vérifierez les doublons avant de confirmer.</p>
+    <form method="post" action="/admin/mandats/{{ mandat.id }}/preparer" enctype="multipart/form-data" data-mandat-submit>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="champ"><label for="fichier">Fichier à examiner</label><input type="file" id="fichier" name="fichier" accept=".csv,.xlsx" required></div>
+      <details><summary>Le fichier a un titre avant les colonnes ou plusieurs feuilles</summary><div class="mandat-grille"><div class="champ"><label for="entete">Numéro de la ligne d’en-tête</label><input type="number" id="entete" name="ligne_entete" value="1" min="1" max="20" required></div><div class="champ"><label for="feuille">Numéro de feuille Excel</label><input type="number" id="feuille" name="feuille" value="1" min="1" max="50" required></div></div></details>
+      <button class="btn" type="submit">Préparer l’import</button>
+    </form>
+  </div>
+  <details class="mandat-panel" id="saisie-manuelle" {% if saisie is defined %}open{% endif %}><summary>Ajouter une organisation manuellement</summary><form method="post" action="/admin/mandats/{{ mandat.id }}/organisations" data-mandat-form><input type="hidden" name="csrf_token" value="{{ csrf_token }}">{{ organisation(saisie or {}, 'ajout') }}<button class="btn" type="submit">Ajouter l’organisation</button></form></details>
+  {% if entreprises %}
+  <div class="mandat-actions"><h2>Organisations à travailler</h2><div class="champ"><label for="filtre-mandat">Afficher</label><select id="filtre-mandat"><option value="toutes">Toutes les organisations</option value="pilote">Les 5 premières (essai)</option>{% for k, label in etats.items() %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select></div></div>
+  <div class="tableau-scroll"><table class="mandat-table" id="mandat-organisations"><thead><tr><th>Organisation</th><th>Secteur / pays</th><th>Statut</th><th>Retenus</th><th></th></tr></thead><tbody>
+    {% for e in entreprises %}<tr data-statut="{{ e.statut }}" data-index="{{ loop.index }}"><td><strong>{{ e.nom }}</strong>{% if e.prix %}<span class="mandat-secondaire">Prix : {{ e.prix }}</span>{% endif %}{% if e.durabilite %}<span class="mandat-secondaire">{{ e.durabilite }}</span>{% endif %}</td><td>{{ e.secteur or 'À préciser' }}<span class="mandat-secondaire">{{ e.pays or '' }}{% if e.region %} · {{ e.region }}{% endif %}</span></td><td><span class="mandat-badge">{{ etats[e.statut] }}</span></td><td>{{ contacts_par_org[e.id]|selectattr('retenu')|list|length }}</td><td><a href="/admin/mandats/{{ mandat.id }}/organisations/{{ e.id }}">Ouvrir →</a></td></tr>{% endfor %}
+  </tbody></table></div><p id="mandat-filtre-vide" hidden>Aucune organisation ne correspond à ce filtre.</p>
+  {% else %}<p class="mandat-aide">Aucune organisation enregistrée. Importez un fichier ou utilisez la saisie manuelle ci-dessus.</p>{% endif %}
+</section><script src="/static/mandats.js" defer></script>
+{% endblock %}

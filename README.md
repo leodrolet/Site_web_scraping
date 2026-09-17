@@ -90,27 +90,64 @@ Ouvre ensuite **<http://localhost:8000>**.
    - *Recherche en lot* : téléverse un CSV (`entreprise, departement, region`).
 3. Clique **📥 Télécharger Excel**.
 
-## Dossiers de recherche pour une liste reçue
+## Mandats de recherche privés (administrateur)
 
-Depuis **Dossiers** dans la navigation, crée un dossier pour la liste de Lyse.
-Importe un CSV UTF-8 ou un fichier Excel `.xlsx` avec une colonne `entreprise`
-(ou `company`). Les colonnes `secteur`, `region` et `site` sont facultatives.
-L'import accepte jusqu'à 2 Mo et 2 000 lignes; les noms identiques, sans égard
-aux majuscules et aux accents, sont dédoublonnés dans le dossier.
+Connecte-toi avec ton compte administrateur, puis ouvre **Mandats** ou
+`/admin/mandats`. Chaque mandat appartient à son créateur. Les autres comptes,
+y compris les autres administrateurs, n'ont pas accès à ses fiches.
 
-Ouvre chaque fiche pour chercher et enregistrer jusqu'à deux contacts. Le lien
-qui confirme le poste actuel est obligatoire dès qu'un contact est renseigné.
-Un courriel exige aussi le lien de sa source. Si aucun courriel fiable n'est
-disponible, laisse le champ vide : l'export indiquera **non trouvé**. La fiche
-propose des raccourcis vers le site de l'entreprise, une recherche de son équipe,
-des profils publics et la recherche automatique ProspectB2B préremplie.
+1. Crée un mandat pour Lyse. Le budget proposé est de 480 minutes (8 heures),
+   modifiable à 420 minutes pour 7 heures. Le temps réellement travaillé se saisit
+   manuellement; il n'est pas déduit du temps pendant lequel l'onglet reste ouvert.
+2. Importe un CSV (UTF-8 ou Windows-1252, virgule, point-virgule ou tabulation)
+   ou un Excel `.xlsx`. Limites : 2 Mo, 2 000 lignes, 100 colonnes.
+   Tu peux choisir la ligne d'en-tête et le numéro de feuille Excel.
+3. Associe les colonnes : organisation, secteur, pays, région, site, prix,
+   notes, sources et durabilité/carbone zéro. Vérifie l'aperçu, puis confirme.
+   Aucune organisation n'est créée avant confirmation. Les colonnes originales
+   sont conservées sur les fiches. Les doublons peuvent être ignorés ou complétés.
+4. Commence par le filtre **Les 5 premières (essai)**. Sur chaque fiche, utilise
+   les liens de recherche ou un fournisseur configuré, puis enregistre les
+   contacts et leurs sources. Coche **Retenir ce contact dans l'export** pour
+   sélectionner les personnes pertinentes. Il est possible de conserver plus
+   de deux contacts (jusqu'à 100 par organisation).
+5. Marque l'organisation **Terminé** même si aucun contact pertinent n'a été trouvé,
+   en expliquant le résultat dans les notes. Chaque formulaire a son bouton
+   d'enregistrement; tu peux revenir au mandat et reprendre le travail plus tard.
+6. Exporte l'Excel : **Contacts retenus**, **Organisations** (y compris celles sans
+   contact) et **Bilan**. Les sources, dates et statuts accompagnent les résultats.
 
-Marque une entreprise **Traitée** une fois sa recherche terminée, même si aucun
-contact n'a été trouvé. L'export Excel inclut ces entreprises, les contacts et
-leurs sources, ainsi qu'un onglet **Bilan** avec le nombre d'entreprises traitées
-et la durée de la séance. **Terminer la séance** fige cette durée; les fiches
-restent modifiables. Cette vérification est manuelle : l'application ne confirme
-pas automatiquement l'emploi actuel ni la fiabilité d'une source.
+Un contact peut être **à vérifier**, **vérifié** ou **écarté**. Un contact vérifié
+exige un poste, des liens de preuve et une date. Les courriels ont leur propre
+statut : **non trouvé**, **à vérifier** ou **trouvé**; un courriel trouvé exige
+une source. Les suggestions API restent à vérifier et ne sont jamais retenues
+automatiquement. Les résultats SerpAPI sont des pistes de profils, pas des
+contacts vérifiés. Aucune adresse n'est générée à partir d'un modèle de courriel.
+
+Chaque recherche du mandat interroge une seule organisation, un seul fournisseur
+et une seule page, avec le délai réseau existant de 10 secondes par appel.
+Les clés restent côté serveur. Sans clé configurée, les recherches par liens
+et la saisie manuelle fonctionnent. Il n'y a pas de collecte automatique de profils
+LinkedIn ni de parcours automatique de répertoires.
+
+Le [guide complet](docs/mandats-recherche.md) explique les règles de doublons,
+les vérifications humaines et les limites. Un [CSV d'exemple](exemple_mandat.csv)
+contient uniquement des organisations fictives.
+
+### Vérifications du développement
+
+```bash
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m compileall -q database.py main.py mandats.py mandats_recherche.py routes
+node --check static/mandats.js
+git diff --check
+```
+
+Les tests utilisent une base SQLite temporaire et des réponses API simulées.
+Ils ne consomment pas de crédits et ne modifient pas les données du compte réel.
+La migration ajoute les tables et colonnes manquantes; elle conserve les comptes,
+l'historique et les anciens dossiers. Les anciens contacts restent à vérifier
+et doivent être sélectionnés explicitement pour le nouvel export.
 
 ---
 

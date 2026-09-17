@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Mandats de recherche{% endblock %}
+{% block content %}
+<section class="app-wrap mandat-wrap">
+  <div class="app-tete"><a href="/admin">← Administration</a><h1>Mandats de recherche</h1><p class="muted">Votre espace privé pour préparer les listes de Lyse, vérifier les contacts et remettre un tableau sourcé.</p></div>
+  <form method="post" action="/admin/mandats" class="mandat-panel mandat-creer">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="champ"><label for="mandat-nom">Nom du nouveau mandat</label><input type="text" id="mandat-nom" name="nom" required maxlength="160" placeholder="Ex. Lyse · architecture et construction durable"></div>
+    <button class="btn" type="submit">Créer le mandat</button>
+  </form>
+  {% if mandats %}
+  <div class="tableau-scroll"><table class="mandat-table"><thead><tr><th>Mandat</th><th>Organisations traitées</th><th>Contacts retenus</th><th>Temps saisi</th><th></th></tr></thead><tbody>
+    {% for d in mandats %}{% set s = statistiques[d.id] %}<tr><td><strong>{{ d.nom }}</strong></td><td>{{ s.traitees }} / {{ s.total }}</td><td>{{ s.retenus }}</td><td>{{ d.temps_minutes }} min</td><td><a href="/admin/mandats/{{ d.id }}">Reprendre →</a></td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<div class="etat-vide"><p class="etat-vide-titre">Votre premier mandat commence ici</p><p class="etat-vide-texte">Créez le mandat, importez une liste, puis commencez par cinq organisations pour mesurer votre rythme.</p></div>{% endif %}
+</section>
+{% endblock %}

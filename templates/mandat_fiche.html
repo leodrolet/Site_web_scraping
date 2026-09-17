@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "mandat_macros.html" import organisation, contact with context %}
+{% block title %}{{ entreprise.nom }} · Mandat{% endblock %}
+{% block content %}
+<section class="app-wrap mandat-wrap">
+  <div class="app-tete"><a href="/admin/mandats/{{ mandat.id }}">← {{ mandat.nom }}</a><h1>{{ entreprise.nom }}</h1><p class="muted">{{ etats[entreprise.statut] }} · {{ tailles[entreprise.taille] }}{% if entreprise.mise_a_jour %} · Sauvegardée le {{ entreprise.mise_a_jour.strftime('%Y-%m-%d %H:%M') }} UTC{% endif %}</p></div>
+  {% if erreur %}<div class="alerte alerte-error" role="alert">{{ erreur }}</div>{% endif %}
+  {% if message or request.query_params.get('enregistre') %}<div class="alerte alerte-info" role="status">{{ message or 'Modifications enregistrées.' }}</div>{% endif %}
+  <details class="mandat-panel" {% if saisie is defined %}open{% endif %}><summary>Organisation : coordonnées, sources et état de recherche</summary>
+    <form method="post" action="/admin/mandats/{{ mandat.id }}/organisations/{{ entreprise.id }}" data-mandat-form>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="revision" value="{{ entreprise.revision }}">
+      {{ organisation(saisie if saisie is defined else entreprise, 'organisation') }}
+      <p class="mandat-aide">Marquez « terminé » quand la recherche est finie, même si aucun contact pertinent n’a été trouvé. Expliquez alors le résultat dans les notes.</p><button class="btn" type="submit">Enregistrer l’organisation</button>
+    </form>
+  </details>
+  <section class="mandat-panel"><h2>Recherche assistée</h2><p class="muted">Pour l’enseignement et les organismes publics, pensez communications et partenariats. Dans les grands groupes, privilégiez le Canada ou le territoire le plus proche.</p>
+    <div class="mandat-liens">{% if entreprise.site %}<a href="{{ entreprise.site }}" target="_blank" rel="noopener noreferrer">Ouvrir le site officiel ↗</a>{% endif %}{% for titre, lien in recherches %}<a href="{{ lien }}" target="_blank" rel="noopener noreferrer">{{ titre }} ↗</a>{% endfor %}</div>
+    <details><summary>Obtenir des suggestions avec les fournisseurs configurés</summary>
+      <p class="mandat-aide">Une organisation et un fournisseur par recherche. Des crédits du fournisseur peuvent être utilisés. Toutes les suggestions restent à vérifier; aucun courriel n’est inventé.</p>
+      <form method="post" action="/admin/mandats/{{ mandat.id }}/organisations/{{ entreprise.id }}/rechercher" data-mandat-submit>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="revision" value="{{ entreprise.revision }}"><div class="mandat-grille">
+        <div class="champ"><label for="service">Fournisseur</label><select id="service" name="service" required><option value="">Choisir…</option>{% for k, api in apis.items() %}<option value="{{ k }}" {% if not api.actif %}disabled{% endif %}>{{ api.nom }}{% if not api.actif %} · non configuré{% endif %}</option>{% endfor %}</select></div>
+        <div class="champ"><label for="api-dep">Département</label><select id="api-dep" name="departement">{% for dep in departements %}<option {% if dep == 'Les deux' %}selected{% endif %}>{{ dep }}</option>{% endfor %}</select></div>
+        <div class="champ"><label for="api-region">Zone (filtrage selon le fournisseur)</label><select id="api-region" name="region">{% for reg in regions %}<option {% if reg == 'Toutes' %}selected{% endif %}>{{ reg }}</option>{% endfor %}</select></div>
+        </div><button class="btn-ghost" type="submit">Rechercher des suggestions</button>
+      </form>
+      <p class="mandat-aide">Sans fournisseur configuré, utilisez les liens ci-dessus et ajoutez vos contacts manuellement. Hunter recherche par organisation; vérifiez vous-même la région de chaque personne.</p>
+    </details>
+    {% if pistes %}<h3>Pistes de profils, non vérifiées</h3><ul>{% for piste in pistes %}<li><a href="{{ piste.url }}" target="_blank" rel="noopener noreferrer">{{ piste.url }}</a> · {{ piste.provenance }} · {{ piste.date }}</li>{% endfor %}</ul>{% endif %}
+  </section>
+  <section id="contacts"><div class="mandat-actions"><h2>Contacts</h2><span class="muted">{{ contacts|selectattr('retenu')|list|length }} retenu(s) / {{ contacts|length }} enregistré(s)</span></div>
+    <p class="mandat-aide">Retenez les personnes pertinentes pour l’export. Les statuts et sources sont inclus même si une vérification reste à faire.</p>
+    {% for c in contacts %}{{ contact(c) }}{% endfor %}
+    {{ contact({}, nouveau=true) }}
+  </section>
+  {% if donnees_import %}<details class="mandat-panel"><summary>Données originales des fichiers importés</summary>{% for ligne in donnees_import %}<h3>{{ ligne.fichier }}</h3><dl class="mandat-brut">{% for titre in ligne.colonnes %}<dt>{{ titre }}</dt><dd>{{ ligne.valeurs[loop.index0] }}</dd>{% endfor %}</dl>{% endfor %}</details>{% endif %}
+</section><script src="/static/mandats.js" defer></script>
+{% endblock %}

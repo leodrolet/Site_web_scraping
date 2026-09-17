@@ -1,0 +1,64 @@
+/* Espace privé, reprend les couleurs, boutons et polices du site. */
+.mandat-wrap { max-width: 1160px; }
+.mandat-wrap .app-tete > a { display: inline-block; margin-bottom: 1rem; }
+.mandat-wrap h1 { font-size: 2rem; overflow-wrap: anywhere; }
+.mandat-wrap h2 { font-size: 1.35rem; }
+.mandat-wrap h3 { font-size: 1.05rem; margin-top: 1.4rem; }
+.mandat-wrap .muted, .mandat-aide { max-width: 75ch; }
+.mandat-panel { background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); padding: 1.5rem; margin: 1.5rem 0; }
+.mandat-wrap summary { cursor: pointer; font-weight: 600; padding: .4rem 0; }
+.mandat-wrap details[open] > summary { margin-bottom: 1rem; }
+.mandat-wrap details form > button { margin-top: .9rem; }
+.mandat-creer, .mandat-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.mandat-creer { align-items: flex-end; }
+.mandat-creer .champ { flex: 1; min-width: min(100%, 260px); margin: 0; }
+.mandat-actions { margin: 1rem 0; }
+.mandat-actions p, .mandat-actions h2 { margin: 0; }
+.mandat-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.4rem; }
+.mandat-grille .champ { margin: 0 0 .4rem; }
+.mandat-wrap input:not([type=checkbox]):not([type=hidden]), .mandat-wrap textarea, .mandat-wrap select {
+  display: block; width: 100%; min-height: 44px; padding: .65rem .8rem;
+  border: 1px solid var(--ligne-forte); border-radius: var(--r-sm);
+  font: inherit; font-size: .95rem; color: var(--encre); background: var(--surface);
+}
+.mandat-wrap input::placeholder { color: var(--ardoise); }
+.mandat-wrap input[type=file] { overflow: hidden; }
+.mandat-wrap textarea { resize: vertical; }
+.mandat-wrap label { display: block; font-size: .9rem; font-weight: 500; margin-bottom: .4rem; }
+.mandat-wrap .mandat-case { display: flex; align-items: flex-start; gap: .6rem; max-width: 75ch; }
+.mandat-case input { flex: none; width: 18px; height: 18px; margin-top: .2rem; accent-color: var(--cobalt); }
+.mandat-stats { display: grid; grid-template-columns: repeat(5, 1fr); padding: 1.2rem 0; margin: 1.5rem 0; border-block: 1px solid var(--ligne-forte); gap: 1.2rem; }
+.mandat-stats dt { font-size: .85rem; color: var(--ardoise); }
+.mandat-stats dd { margin: 0; font-size: 1.8rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mandat-table { width: 100%; border-collapse: collapse; font-size: .92rem; background: var(--surface); }
+.mandat-table th, .mandat-table td { text-align: left; padding: .9rem 1rem; border-bottom: 1px solid var(--ligne); vertical-align: top; }
+.mandat-table th { color: var(--ardoise); background: var(--brume); font-size: .8rem; font-weight: 600; }
+.mandat-table td { max-width: 340px; overflow-wrap: anywhere; min-width: 110px; }
+.mandat-table td:first-child { min-width: 160px; }
+.mandat-table td:last-child a { white-space: nowrap; }
+.mandat-secondaire { display: block; font-size: .84rem; color: var(--ardoise); margin-top: .2rem; white-space: pre-line; }
+.mandat-badge { display: inline-block; font-size: .8rem; color: var(--encre-2); background: var(--brume); padding: .2rem .5rem; border-radius: 5px; }
+.mandat-liens { display: flex; gap: .65rem 1.2rem; flex-wrap: wrap; margin: 1.2rem 0; }
+.mandat-liens a { text-decoration: underline; text-underline-offset: 3px; font-size: .93rem; }
+.mandat-panel > details { border-top: 1px solid var(--ligne); padding-top: 1rem; margin-top: 1.3rem; }
+.mandat-aide { font-size: .88rem; color: var(--ardoise); margin: 1rem 0; }
+.mandat-contact { border-top: 1px solid var(--ligne-forte); padding: 1rem 0; }
+.mandat-contact summary { display: list-item; }
+.mandat-contact summary .mandat-badge { margin-left: .6rem; }
+.mandat-contact form { padding: 1.4rem; background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r-sm); margin-top: .7rem; }
+.mandat-brut { display: grid; grid-template-columns: minmax(130px, 1fr) 3fr; gap: .6rem 1rem; font-size: .88rem; }
+.mandat-brut dt { color: var(--ardoise); }
+.mandat-brut dd { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
+.mandat-apercu { max-height: 70vh; overflow: auto; }
+.mandat-apercu th { position: sticky; top: 0; }
+.mandat-wrap [hidden] { display: none !important; }
+.mandat-wrap ul a { overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .mandat-grille { grid-template-columns: 1fr; }
+  .mandat-stats { grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+  .mandat-stats dt { font-size: .76rem; }
+  .mandat-panel, .mandat-contact form { padding: 1rem; }
+  .mandat-actions > .btn { width: 100%; }
+  .mandat-brut { grid-template-columns: 1fr; gap: .2rem; }
+  .mandat-brut dd { margin-bottom: .7rem; }
+}

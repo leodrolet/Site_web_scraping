@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Confirmer l’import{% endblock %}
+{% block content %}
+<section class="app-wrap mandat-wrap">
+  <div class="app-tete"><a href="/admin/mandats/{{ mandat.id }}/imports/{{ importation.id }}">← Corriger les colonnes</a><h1>Vérifier avant l’import</h1><p class="muted">{{ importation.fichier }} · {{ comptes.nouvelle }} nouvelle(s), {{ comptes.doublon }} doublon(s), {{ comptes.invalide }} ligne(s) invalide(s).</p></div>
+  <p>Les espaces, accents, majuscules et signes de ponctuation sont normalisés pour détecter les doublons. Deux pays différents restent deux fiches. Un site partagé est signalé pour vérification.</p>
+  <form method="post" action="/admin/mandats/{{ mandat.id }}/imports/{{ importation.id }}/confirmer" class="mandat-panel" data-mandat-submit>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="jeton" value="{{ jeton }}">
+    <div class="champ"><label for="doublons">Traitement des doublons</label><select id="doublons" name="doublons"><option value="completer">Compléter les champs vides et réunir prix, sources et notes</option><option value="ignorer">Ignorer les doublons et conserver les fiches actuelles</option></select></div>
+    <p class="mandat-aide">Les données déjà renseignées et les contacts existants sont conservés. Les colonnes originales des lignes fusionnées restent disponibles.</p>
+    {% if comptes.invalide %}<label class="mandat-case"><input type="checkbox" name="ignorer_invalides" required> Exclure les {{ comptes.invalide }} ligne(s) invalide(s) signalée(s) ci-dessous. Je pourrai les saisir manuellement.</label>{% endif %}
+    <button class="btn" type="submit">Confirmer l’import</button>
+  </form>
+  <div class="tableau-scroll mandat-apercu"><table class="mandat-table"><thead><tr><th>Ligne de données</th><th>Organisation</th><th>Secteur / pays</th><th>Site / prix / notes</th><th>Résultat</th></tr></thead><tbody>
+    {% for ligne in lignes %}{% set v = ligne.valeurs %}<tr><td>{{ ligne.index + 1 }}</td><td>{{ v.nom }}</td><td>{{ v.secteur }}<span class="mandat-secondaire">{{ v.pays }} · {{ v.region }}</span></td><td>{{ v.site }}{% if v.prix %}<span class="mandat-secondaire">Prix : {{ v.prix }}</span>{% endif %}{% if v.note %}<span class="mandat-secondaire">{{ v.note }}</span>{% endif %}</td><td><strong>{{ {'nouvelle':'Nouvelle', 'doublon':'Doublon', 'invalide':'À corriger'}[ligne.etat] }}</strong><span class="mandat-secondaire">{{ ligne.detail }}</span></td></tr>{% endfor %}
+  </tbody></table></div>
+</section><script src="/static/mandats.js" defer></script>
+{% endblock %}

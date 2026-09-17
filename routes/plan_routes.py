@@ -116,10 +116,16 @@ def exporter_mes_donnees(request: Request,
                 "nom": d.nom,
                 "debut": d.debut.isoformat() if d.debut else None,
                 "fin": d.fin.isoformat() if d.fin else None,
+                "temps_minutes": d.temps_minutes,
+                "budget_minutes": d.budget_minutes,
                 "entreprises": [
                     {
                         "nom": e.nom, "secteur": e.secteur, "region": e.region,
                         "site": e.site, "statut": e.statut, "note": e.note,
+                        "pays": e.pays, "prix": e.prix, "sources": e.sources,
+                        "taille": e.taille, "durabilite": e.durabilite,
+                        "donnees_importees": json.loads(e.donnees_import_json or "[]"),
+                        "pistes": json.loads(e.pistes_json or "[]"),
                         "contacts": json.loads(e.contacts_json or "[]"),
                     }
                     for e in d.entreprises
