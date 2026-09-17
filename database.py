@@ -3,7 +3,7 @@
 import os
 from datetime import datetime
 
-from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String, Text,
+from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String, Text, LargeBinary,
                         create_engine, inspect, text)
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from sqlalchemy.pool import NullPool
@@ -101,6 +101,8 @@ class DossierRecherche(Base):
                                cascade="all, delete-orphan")
     imports = relationship("ImportMandat", back_populates="dossier",
                            cascade="all, delete-orphan")
+    documents = relationship("DocumentMandat", back_populates="dossier",
+                             cascade="all, delete-orphan")
 
 
 class EntrepriseDossier(Base):
@@ -126,6 +128,19 @@ class EntrepriseDossier(Base):
     contacts_json = Column(Text, default="[]")
     mise_a_jour = Column(DateTime, nullable=True)
     dossier = relationship("DossierRecherche", back_populates="entreprises")
+
+
+class DocumentMandat(Base):
+    __tablename__ = "documents_mandat"
+    id = Column(String(40), primary_key=True)
+    dossier_id = Column(Integer, ForeignKey("dossiers_recherche.id"), nullable=False, index=True)
+    fichier = Column(String(255), nullable=False)
+    genre = Column(String(20), nullable=False)
+    original = Column(LargeBinary, nullable=False)
+    propositions_json = Column(Text, nullable=False)
+    revision = Column(Integer, nullable=False, default=0)
+    cree_le = Column(DateTime, default=datetime.utcnow, nullable=False)
+    dossier = relationship("DossierRecherche", back_populates="documents")
 
 
 class ImportMandat(Base):

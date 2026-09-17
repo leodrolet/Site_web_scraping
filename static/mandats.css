@@ -53,6 +53,9 @@
 .mandat-apercu th { position: sticky; top: 0; }
 .mandat-wrap [hidden] { display: none !important; }
 .mandat-wrap ul a { overflow-wrap: anywhere; }
+.document-contexte { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; background: var(--brume); padding: 1rem; border-radius: var(--r-sm); }
+.document-rouge { color: #b51c22; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mandat-panel form > button { margin-top: 1rem; }
 @media (max-width: 700px) {
   .mandat-grille { grid-template-columns: 1fr; }
   .mandat-stats { grid-template-columns: repeat(3, 1fr); gap: .75rem; }

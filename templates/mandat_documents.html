@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Documents · {{ mandat.nom }}{% endblock %}
+{% block content %}<section class="app-wrap mandat-wrap">
+<div class="app-tete"><a href="/admin/mandats/{{ mandat.id }}">← {{ mandat.nom }}</a><h1>Documents de Don et de Lyse</h1><p class="muted">Les fichiers restent privés. Confirmez les propositions une à une; vous pouvez reprendre plus tard.</p></div>
+{% if erreur %}<div class="alerte alerte-error" role="alert">{{ erreur }}</div>{% endif %}
+<div class="mandat-grille">
+<section class="mandat-panel"><h2>Importer une demande Word</h2><p>Les passages rouges sont présentés avec leur contexte. Une personne déjà nommée n’est pas automatiquement une nouvelle entreprise.</p>
+<form method="post" enctype="multipart/form-data" data-mandat-submit><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="genre" value="word"><label for="word">Document .docx · 2 Mo maximum</label><input id="word" name="fichier" type="file" accept=".docx,.doc" required><button class="btn" type="submit">Examiner le Word</button></form>
+<details><summary>Mon fichier est un ancien .doc</summary><p>Vercel ne dispose pas de Word ou LibreOffice. Sur votre ordinateur, ouvrez le .doc dans l’un de ces logiciels, puis utilisez <strong>Enregistrer sous → Document Word (.docx)</strong> avec un nouveau nom. Vérifiez les passages rouges et la mise en page avant d’importer cette copie. Renommer simplement l’extension ne suffit pas.</p></details>
+<p class="mandat-aide">Analyse du corps du document, tableaux inclus. Les commentaires, en-têtes, pieds de page et images ne servent pas à détecter les demandes; vérifiez-les dans Word.</p></section>
+<section class="mandat-panel"><h2>Importer un Excel en blocs</h2><p>Pour les contacts disposés verticalement ou côte à côte. Les lignes vides délimitent les blocs; les associations proposées doivent être corrigées.</p>
+<form method="post" enctype="multipart/form-data" data-mandat-submit><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="genre" value="blocs"><label for="excel">Classeur .xlsx · 2 Mo maximum</label><input id="excel" name="fichier" type="file" accept=".xlsx" required><label for="feuille">Numéro de feuille à lire</label><input id="feuille" name="feuille" type="number" min="1" max="50" value="1" required><button class="btn" type="submit">Examiner les blocs</button></form><p class="mandat-aide">2 000 lignes, 100 colonnes. Les formules doivent être remplacées par leurs valeurs. Pour une liste classique, utilisez l’import CSV/XLSX du mandat.</p></section>
+</div>
+<h2>Documents sauvegardés</h2>
+{% for doc in documents %}<div class="mandat-panel"><h3>{{ doc.fichier }}</h3><p>{{ 'Demande Word' if doc.genre == 'word' else 'Excel en blocs' }}</p><a class="btn-ghost" href="/admin/mandats/{{ mandat.id }}/documents/{{ doc.id }}">Reprendre l’aperçu</a>{% if doc.genre == 'word' %} <a class="btn" href="/admin/mandats/{{ mandat.id }}/documents/{{ doc.id }}/reponse">Préparer la réponse à Don</a>{% endif %}</div>{% else %}<p>Aucun document importé.</p>{% endfor %}
+</section><script src="/static/mandats.js" defer></script>{% endblock %}

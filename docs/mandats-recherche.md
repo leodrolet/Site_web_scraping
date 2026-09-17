@@ -44,6 +44,103 @@ L'aperçu expire après 24 heures. Un import confirmé ne peut pas être rejoué
 La copie temporaire du contenu est vidée après confirmation; les valeurs d'origine
 conservées dans les fiches restent disponibles.
 
+## Demandes Word et Excel présentés en blocs
+
+Dans le mandat, ouvrir **Importer une demande Word ou un Excel en blocs**. Ce parcours
+complète l'import structuré existant. Aucun contact n'est recherché automatiquement
+pendant la lecture des fichiers.
+
+### Formats utilisables sur Vercel
+
+| Format | Traitement |
+| --- | --- |
+| `.docx` | Lecture des passages rouges et production d'une copie complétée, directement en Python, sans Word ni LibreOffice sur le serveur |
+| `.doc` ancien | Conversion préalable requise sur votre ordinateur; le serveur affiche les instructions et ne prétend pas le lire |
+| `.xlsx` en blocs | Aperçu modifiable, une feuille à la fois |
+| CSV / `.xlsx` structuré | Import habituel avec correspondance des colonnes, toujours disponible |
+| `.xls`, documents chiffrés, macros et objets Word incorporés | Non pris en charge par le parcours guidé; réenregistrer une copie simple |
+
+Pour le fichier Word de Don : l'ouvrir dans **Word ou LibreOffice**, puis **Enregistrer
+sous → Document Word (.docx)** avec un nouveau nom. Ne pas simplement renommer
+l'extension. Comparer les couleurs et la présentation de la copie avec l'original avant
+de l'importer. Une conversion peut modifier les sauts de page et certains champs.
+Les convertisseurs de texte brut perdent la couleur : ils ne conviennent pas à ce mandat.
+Le serveur Vercel n'exécute aucun programme bureautique et ne transmet aucun fichier à
+un convertisseur externe.
+
+### Confirmer les passages rouges
+
+L'aperçu montre le texte rouge, son paragraphe et les paragraphes voisins, y compris
+dans les tableaux du corps du document. Les couleurs directes et les couleurs de styles
+hérités sont examinées. Les thèmes courants sont pris en compte; les commentaires,
+en-têtes, pieds de page, images et certaines mises en forme avancées nécessitent une
+lecture dans Word. Une absence de résultat ne prouve pas une absence de demande.
+
+1. Choisir une **organisation existante**, ou corriger le nom proposé pour en créer une.
+2. Si le rouge nomme déjà une personne, ne pas la créer comme entreprise. Associer le
+   passage à sa véritable organisation, ajouter le contact si utile, ou ignorer l'élément.
+3. Ajouter une note de validation. Les contacts peuvent aussi être saisis dans cet aperçu.
+4. Cocher la confirmation humaine puis **Confirmer cet élément et continuer**.
+
+**Enregistrer les corrections sans importer** conserve un brouillon. **Ignorer** ne crée
+rien. Chaque élément est sauvegardé séparément. Après confirmation, les corrections des
+coordonnées se font dans la fiche organisation. Un élément confirmé ne peut pas être
+rejoué accidentellement. **Revoir l'association** permet de corriger un rattachement ou
+de reprendre un élément ignoré; cela ne supprime pas les fiches ou contacts déjà créés.
+La réponse Word attend la nouvelle confirmation de cet emplacement.
+
+### Corriger les blocs Excel
+
+Les lignes vides délimitent des groupes; les colonnes parallèles permettent de proposer
+plusieurs personnes. L'aperçu conserve les coordonnées des cellules et tout le texte du
+bloc. Les postes, courriels, régions simples et liens peuvent être proposés lorsque leur
+disposition est reconnaissable. Les titres isolés et les blocs sans entreprise restent
+ambigus : les ignorer ou leur attribuer une organisation connue. Aucun nom d'entreprise
+n'est déduit automatiquement d'un courriel.
+
+Les blocs peuvent nécessiter des corrections, notamment si un lien précède l'entreprise,
+si une ligne vide sépare un nom de ses coordonnées ou si plusieurs entreprises se suivent
+sans séparation. Choisir une fiche existante permet de réunir plusieurs blocs d'une même
+entreprise. Jusqu'à 12 contacts sont éditables par bloc; les autres restent lisibles dans
+le contexte et peuvent être ajoutés depuis la fiche.
+
+Les contacts proposés ne sont **pas cochés par défaut**. Corriger les champs, puis cocher
+ceux à importer. Les réserves telles que « try » ou « could try » restent dans les notes.
+Tous les nouveaux contacts restent **à vérifier**, non retenus et sans langue déduite.
+Une correspondance avec un contact existant (nom normalisé ou courriel) est ignorée,
+jamais utilisée pour remplacer ses données vérifiées. Les données originales du bloc
+sont conservées sur la fiche pour comparer et compléter manuellement.
+
+### Préparer la réponse à Don
+
+Après validation des fiches, cocher les contacts à retenir et enregistrer chaque contact.
+Depuis **Documents du mandat**, choisir **Préparer la réponse à Don** sur le Word importé.
+L'aperçu présente chaque emplacement associé et les lignes qui seront ajoutées.
+
+Confirmer la relecture pour télécharger **une nouvelle copie `.docx`**. Les contacts
+retenus sont insérés en rouge après un saut de ligne dans le paragraphe confirmé : nom,
+poste, courriel disponible ou « courriel non trouvé », région lorsqu'elle est renseignée.
+Les contacts ou courriels encore à vérifier sont explicitement signalés. Les passages
+non associés et les organisations sans contact retenu restent sans ajout. Si les contacts
+changent après l'aperçu, le téléchargement demande une nouvelle relecture.
+
+Les autres parties du fichier Word sont copiées sans modification, et le texte initial
+reste présent. La pagination peut évoluer avec les ajouts; **ouvrir la copie dans Word
+pour vérifier la mise en page avant envoi**. L'aperçu du site est un aperçu du contenu,
+pas un rendu fidèle des pages. Aucun courriel n'est envoyé à Don par le site.
+Les sources et la provenance restent dans les fiches et l'export Excel du mandat.
+
+### Confidentialité et limites
+
+Les documents originaux importés, les propositions et les corrections sont conservés en
+base privée pour permettre la reprise et la génération ultérieure, avec accès uniquement
+au propriétaire administrateur. Ils sont supprimés avec son compte via le parcours existant.
+La base PostgreSQL persistante est indispensable en production. Les fichiers restent
+limités à 2 Mo (30 Mo décompressés), 500 éléments, 5 000 paragraphes Word ou 2 000 lignes
+et 100 colonnes Excel. Chaque confirmation traite un seul bloc, sans requête couvrant
+tout le mandat. Les archives mal formées, chiffrées ou contenant des déclarations XML
+externes sont refusées. Toutes les actions utilisent les protections CSRF existantes.
+
 ## Doublons et corrections
 
 La détection compare les noms sans accents, différences de casse, espaces ou ponctuation.

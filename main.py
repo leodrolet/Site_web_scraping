@@ -26,6 +26,7 @@ from database import SessionLocal, init_db  # noqa: E402
 from routes import (admin_routes, app_routes, auth_routes,  # noqa: E402
                     mandat_routes, plan_routes, public)
 from templating import rendre  # noqa: E402
+from routes import mandat_documents_routes  # noqa: E402,F401 enregistre les routes du même routeur protégé
 
 app = FastAPI(title="Outil de prospection B2B")
 

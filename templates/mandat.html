@@ -15,6 +15,11 @@
       <div class="champ"><label for="budget">Budget (420 min = 7 h, 480 min = 8 h)</label><input type="number" id="budget" name="budget_minutes" min="60" max="10000" value="{{ mandat.budget_minutes }}" required></div>
     </div><button class="btn-ghost" type="submit">Enregistrer</button></form></details>
   <div class="mandat-panel">
+    <h2>Documents de Don et de Lyse</h2><p class="muted">Repérez les passages rouges d’une demande Word, corrigez les blocs d’un Excel et préparez une copie Word complétée en rouge.</p>
+    <a class="btn" href="/admin/mandats/{{ mandat.id }}/documents">Importer une demande Word ou un Excel en blocs</a>
+    <a class="btn-ghost" href="/admin/mandats/{{ mandat.id }}/documents">Reprendre un document / Préparer la réponse à Don</a>
+  </div>
+  <div class="mandat-panel">
     <h2>Importer la liste de Lyse</h2><p class="muted">CSV ou Excel .xlsx, jusqu’à 2 Mo et 2 000 lignes. Vous choisirez les colonnes et vérifierez les doublons avant de confirmer.</p>
     <form method="post" action="/admin/mandats/{{ mandat.id }}/preparer" enctype="multipart/form-data" data-mandat-submit>
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><div class="champ"><label for="fichier">Fichier à examiner</label><input type="file" id="fichier" name="fichier" accept=".csv,.xlsx" required></div>
