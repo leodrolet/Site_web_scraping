@@ -163,7 +163,7 @@ et doivent être sélectionnés explicitement pour le nouvel export.
 
 ## Mise en ligne (plus tard)
 
-Le site est prêt pour **Vercel** (`vercel.json` + `api/index.py`) avec une base
+Le site utilise le support natif **FastAPI de Vercel** (`vercel.json`, entrée `main.py`), avec une base
 **Neon.tech** (PostgreSQL). Il tourne aussi sur n'importe quel hébergeur Python :
 
 ```bash
