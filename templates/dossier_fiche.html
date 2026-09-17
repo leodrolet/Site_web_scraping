@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ entreprise.nom }} · Dossier{% endblock %}
+{% block content %}
+<section class="app-wrap dossier-wrap">
+  <div class="app-tete">
+    <a href="/app/dossiers/{{ dossier.id }}">← {{ dossier.nom }}</a>
+    <h1>{{ entreprise.nom }}</h1>
+    <p class="muted">Vérifiez le site de l’entreprise, son équipe, ses communiqués et les profils professionnels publics. Deux contacts pertinents suffisent.</p>
+  </div>
+  {% if erreur %}<div class="alerte alerte-error" role="alert">{{ erreur }}</div>{% endif %}
+  <div class="dossier-liens">
+    <a href="/app?entreprise={{ entreprise.nom|urlencode }}">Préremplir la recherche ProspectB2B →</a>
+    {% if entreprise.site %}<a href="{{ entreprise.site }}" target="_blank" rel="noopener noreferrer">Site de l’entreprise ↗</a>{% endif %}
+    <a href="https://www.google.com/search?q={{ (entreprise.nom ~ ' équipe communications marketing partenariats')|urlencode }}" target="_blank" rel="noopener noreferrer">Chercher l’équipe ↗</a>
+    <a href="https://www.google.com/search?q={{ ('site:linkedin.com/in/ ' ~ entreprise.nom ~ ' marketing communications business development')|urlencode }}" target="_blank" rel="noopener noreferrer">Chercher des profils publics ↗</a>
+  </div>
+  <form method="post" class="dossier-fiche-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="dossier-champs">
+      <div class="champ"><label for="secteur">Secteur</label><input id="secteur" name="secteur" maxlength="160" value="{{ entreprise.secteur or '' }}"></div>
+      <div class="champ"><label for="region">Région</label><input id="region" name="region" maxlength="160" value="{{ entreprise.region or '' }}"></div>
+      <div class="champ"><label for="site">Site web</label><input id="site" name="site" type="url" value="{{ entreprise.site or '' }}" placeholder="https://..."></div>
+    </div>
+    {% for c in contacts %}
+      <fieldset class="dossier-contact">
+        <legend>Contact {{ loop.index }}</legend>
+        <div class="dossier-champs">
+          <div class="champ"><label for="nom-{{ loop.index }}">Nom</label><input id="nom-{{ loop.index }}" name="nom_{{ loop.index }}" maxlength="160" value="{{ c.get('nom', '') }}"></div>
+          <div class="champ"><label for="poste-{{ loop.index }}">Poste actuel</label><input id="poste-{{ loop.index }}" name="poste_{{ loop.index }}" maxlength="160" value="{{ c.get('poste', '') }}"></div>
+          <div class="champ"><label for="source-{{ loop.index }}">Lien confirmant le poste</label><input id="source-{{ loop.index }}" name="source_{{ loop.index }}" type="url" value="{{ c.get('source', '') }}" placeholder="https://..."></div>
+          <div class="champ"><label for="courriel-{{ loop.index }}">Courriel publié ou fiable</label><input id="courriel-{{ loop.index }}" name="courriel_{{ loop.index }}" type="email" value="{{ c.get('courriel', '') }}" placeholder="Laisser vide si non trouvé"></div>
+          <div class="champ"><label for="source-courriel-{{ loop.index }}">Source du courriel</label><input id="source-courriel-{{ loop.index }}" name="source_courriel_{{ loop.index }}" type="url" value="{{ c.get('source_courriel', '') }}" placeholder="https://..."></div>
+        </div>
+      </fieldset>
+    {% endfor %}
+    <div class="champ"><label for="note">Note pour Lyse</label><textarea id="note" name="note" maxlength="2000" rows="3" placeholder="Ex. Communication plus pertinente que ventes pour cet organisme.">{{ entreprise.note or '' }}</textarea></div>
+    <div class="dossier-actions"><div class="champ"><label for="statut">État</label><select id="statut" name="statut"><option value="a_faire" {% if entreprise.statut == 'a_faire' %}selected{% endif %}>À faire</option><option value="en_cours" {% if entreprise.statut == 'en_cours' %}selected{% endif %}>En cours</option><option value="termine" {% if entreprise.statut == 'termine' %}selected{% endif %}>Traitée</option></select></div><button class="btn" type="submit">Enregistrer la fiche</button></div>
+  </form>
+</section>
+{% endblock %}

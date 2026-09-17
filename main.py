@@ -24,7 +24,7 @@ from auth import (RedirectionConfirmation, RedirectionConnexion,  # noqa: E402
                   RedirectionNonAutorise, utilisateur_actuel)
 from database import SessionLocal, init_db  # noqa: E402
 from routes import (admin_routes, app_routes, auth_routes,  # noqa: E402
-                    plan_routes, public)
+                    dossier_routes, plan_routes, public)
 from templating import rendre  # noqa: E402
 
 app = FastAPI(title="Outil de prospection B2B")
@@ -110,5 +110,6 @@ async def _page_introuvable(request, exc):
 app.include_router(public.router)
 app.include_router(auth_routes.router)
 app.include_router(app_routes.router)
+app.include_router(dossier_routes.router)
 app.include_router(plan_routes.router)
 app.include_router(admin_routes.router)

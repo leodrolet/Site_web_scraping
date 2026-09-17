@@ -140,6 +140,7 @@ def page_app(request: Request,
             db: Session = Depends(get_db)):
     return rendre(request, "app.html", utilisateur=utilisateur,
                   **_contexte_app(db, utilisateur,
+                                  entreprise=request.query_params.get("entreprise", "")[:255],
                                   departement="Les deux", region="Canada"))
 
 

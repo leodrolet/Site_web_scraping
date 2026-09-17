@@ -3,7 +3,7 @@
 import os
 from datetime import datetime
 
-from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String,
+from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String, Text,
                         create_engine, inspect, text)
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from sqlalchemy.pool import NullPool
@@ -68,6 +68,8 @@ class Utilisateur(Base):
 
     historique = relationship("HistoriqueRecherche", back_populates="utilisateur",
                              cascade="all, delete-orphan")
+    dossiers = relationship("DossierRecherche", back_populates="utilisateur",
+                           cascade="all, delete-orphan")
 
 
 class HistoriqueRecherche(Base):
@@ -82,6 +84,36 @@ class HistoriqueRecherche(Base):
     date = Column(DateTime, default=datetime.utcnow)
 
     utilisateur = relationship("Utilisateur", back_populates="historique")
+
+
+class DossierRecherche(Base):
+    __tablename__ = "dossiers_recherche"
+
+    id = Column(Integer, primary_key=True)
+    utilisateur_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=False, index=True)
+    nom = Column(String(160), nullable=False)
+    debut = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fin = Column(DateTime, nullable=True)
+    utilisateur = relationship("Utilisateur", back_populates="dossiers")
+    entreprises = relationship("EntrepriseDossier", back_populates="dossier",
+                               cascade="all, delete-orphan")
+
+
+class EntrepriseDossier(Base):
+    __tablename__ = "entreprises_dossier"
+
+    id = Column(Integer, primary_key=True)
+    dossier_id = Column(Integer, ForeignKey("dossiers_recherche.id"), nullable=False, index=True)
+    nom = Column(String(255), nullable=False)
+    cle = Column(String(255), nullable=False)
+    secteur = Column(String(160), default="")
+    region = Column(String(160), default="")
+    site = Column(String(500), default="")
+    statut = Column(String(20), default="a_faire")
+    note = Column(Text, default="")
+    contacts_json = Column(Text, default="[]")
+    mise_a_jour = Column(DateTime, nullable=True)
+    dossier = relationship("DossierRecherche", back_populates="entreprises")
 
 
 # Colonnes ajoutées après la première mise en production : (nom -> définition SQL).

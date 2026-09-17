@@ -57,6 +57,42 @@
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
 }
 
+/* Dossiers de recherche : la même grammaire visuelle que l'outil. */
+.dossier-wrap { padding-bottom: 4rem; }
+.dossier-wrap .app-tete > a { display: inline-block; margin-bottom: 1rem; }
+.dossier-barre, .dossier-resume, .dossier-import, .dossier-actions, .dossier-liens {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+.dossier-barre, .dossier-resume, .dossier-import, .dossier-fiche-form {
+  background: var(--surface); border: 1px solid var(--ligne);
+  border-radius: var(--r); padding: 1.4rem; margin: 1.25rem 0;
+}
+.dossier-barre { justify-content: space-between; }
+.dossier-creer { display: flex; align-items: end; gap: .75rem; flex-wrap: wrap; }
+.dossier-creer label { width: 100%; font-weight: 600; }
+.dossier-resume { justify-content: space-between; }
+.dossier-resume h2 { margin-bottom: .25rem; }
+.dossier-resume p, .dossier-import p { margin: 0; }
+.dossier-import > div { flex: 1 1 300px; }
+.dossier-import label { display: block; font-weight: 600; margin-bottom: .25rem; }
+.dossier-import input[type=file] { max-width: 100%; }
+.dossier-conseil { max-width: 75ch; color: var(--ardoise); }
+.dossier-table { width: 100%; }
+.dossier-liens { margin: 1rem 0; }
+.dossier-liens a { padding: .5rem .75rem; background: var(--cobalt-pale); border-radius: var(--r-sm); }
+.dossier-champs { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+.dossier-fiche-form .champ { min-width: 0; }
+.dossier-fiche-form input, .dossier-fiche-form textarea, .dossier-creer input { max-width: 100%; }
+.dossier-contact { border: 1px solid var(--ligne-forte); border-radius: var(--r-sm); padding: 1.25rem; margin: 1.5rem 0; }
+.dossier-contact legend { font-weight: 700; padding: 0 .4rem; }
+.dossier-fiche-form textarea { width: 100%; resize: vertical; }
+.dossier-actions { justify-content: flex-end; }
+@media (max-width: 700px) {
+  .dossier-barre, .dossier-resume, .dossier-import { align-items: stretch; }
+  .dossier-creer, .dossier-import { flex-direction: column; align-items: stretch; }
+  .dossier-actions { justify-content: flex-start; }
+}
+
 /* ---------------------------------------------------------------- Base --- */
 *, *::before, *::after { box-sizing: border-box; }
 

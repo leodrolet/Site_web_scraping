@@ -7,6 +7,7 @@ connecté — pas d'envoi d'email). Les plans ne sont plus affichés sur le site
 ils servent uniquement de quotas côté serveur (voir plans.py).
 """
 
+import json
 from datetime import datetime, timedelta
 from math import ceil
 
@@ -17,7 +18,7 @@ from sqlalchemy.orm import Session
 import plans
 from auth import (exiger_connexion, hasher_mot_de_passe, valider_csrf,
                  verifier_mot_de_passe)
-from database import HistoriqueRecherche, Utilisateur, get_db
+from database import DossierRecherche, HistoriqueRecherche, Utilisateur, get_db
 from templating import rendre
 
 router = APIRouter()
@@ -87,6 +88,9 @@ def exporter_mes_donnees(request: Request,
     historique = (db.query(HistoriqueRecherche)
                   .filter(HistoriqueRecherche.utilisateur_id == utilisateur.id)
                   .order_by(HistoriqueRecherche.date.desc()).all())
+    dossiers = (db.query(DossierRecherche)
+                .filter(DossierRecherche.utilisateur_id == utilisateur.id)
+                .order_by(DossierRecherche.debut.desc()).all())
     donnees = {
         "export_le": datetime.utcnow().isoformat() + "Z",
         "compte": {
@@ -106,6 +110,22 @@ def exporter_mes_donnees(request: Request,
                 "date": h.date.isoformat() if h.date else None,
             }
             for h in historique
+        ],
+        "dossiers": [
+            {
+                "nom": d.nom,
+                "debut": d.debut.isoformat() if d.debut else None,
+                "fin": d.fin.isoformat() if d.fin else None,
+                "entreprises": [
+                    {
+                        "nom": e.nom, "secteur": e.secteur, "region": e.region,
+                        "site": e.site, "statut": e.statut, "note": e.note,
+                        "contacts": json.loads(e.contacts_json or "[]"),
+                    }
+                    for e in d.entreprises
+                ],
+            }
+            for d in dossiers
         ],
     }
     nom = f"mes-donnees-prospectb2b_{datetime.utcnow().strftime('%Y-%m-%d')}.json"

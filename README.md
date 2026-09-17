@@ -90,6 +90,28 @@ Ouvre ensuite **<http://localhost:8000>**.
    - *Recherche en lot* : téléverse un CSV (`entreprise, departement, region`).
 3. Clique **📥 Télécharger Excel**.
 
+## Dossiers de recherche pour une liste reçue
+
+Depuis **Dossiers** dans la navigation, crée un dossier pour la liste de Lyse.
+Importe un CSV UTF-8 ou un fichier Excel `.xlsx` avec une colonne `entreprise`
+(ou `company`). Les colonnes `secteur`, `region` et `site` sont facultatives.
+L'import accepte jusqu'à 2 Mo et 2 000 lignes; les noms identiques, sans égard
+aux majuscules et aux accents, sont dédoublonnés dans le dossier.
+
+Ouvre chaque fiche pour chercher et enregistrer jusqu'à deux contacts. Le lien
+qui confirme le poste actuel est obligatoire dès qu'un contact est renseigné.
+Un courriel exige aussi le lien de sa source. Si aucun courriel fiable n'est
+disponible, laisse le champ vide : l'export indiquera **non trouvé**. La fiche
+propose des raccourcis vers le site de l'entreprise, une recherche de son équipe,
+des profils publics et la recherche automatique ProspectB2B préremplie.
+
+Marque une entreprise **Traitée** une fois sa recherche terminée, même si aucun
+contact n'a été trouvé. L'export Excel inclut ces entreprises, les contacts et
+leurs sources, ainsi qu'un onglet **Bilan** avec le nombre d'entreprises traitées
+et la durée de la séance. **Terminer la séance** fige cette durée; les fiches
+restent modifiables. Cette vérification est manuelle : l'application ne confirme
+pas automatiquement l'emploi actuel ni la fiabilité d'une source.
+
 ---
 
 ## Où trouver les clés API (pour le `.env` du serveur)
